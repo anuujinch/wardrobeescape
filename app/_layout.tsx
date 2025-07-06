@@ -1,10 +1,9 @@
-// app/_layout.tsx
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <Stack>
-      <Stack.Screen name="index" options={{ title: 'Home' }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen 
         name="mirror-camera" 
         options={{ 
@@ -14,7 +13,10 @@ export default function RootLayout() {
       />
       <Stack.Screen 
         name="wardrobe-assessment" 
-        options={{ title: 'Wardrobe Assessment' }} 
+        options={{ 
+          title: 'Wardrobe Assessment',
+          headerShown: false 
+        }} 
       />
     </Stack>
   );
