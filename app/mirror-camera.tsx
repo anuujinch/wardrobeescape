@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function CameraScreen() {
+export default function MirrorCameraScreen() {
   const [facing, setFacing] = useState<CameraType>('front');
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -93,6 +93,9 @@ export default function CameraScreen() {
           {/* Mirror Frame Effect */}
           <View style={styles.mirrorFrame}>
             <View style={styles.mirrorBorder} />
+            <Text style={styles.mirrorText}>
+              {facing === 'front' ? '💫 Mirror Mode' : '📸 Photo Mode'}
+            </Text>
           </View>
 
           {/* Bottom Controls */}
@@ -180,6 +183,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 20,
     backgroundColor: 'transparent',
+  },
+  mirrorText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    textAlign: 'center',
   },
   bottomControls: {
     paddingHorizontal: 20,
