@@ -18,6 +18,13 @@ export default function RootLayout() {
           headerShown: false 
         }} 
       />
+      <Stack.Screen 
+        name="outfit-recommendations" 
+        options={{ 
+          title: 'Outfit Recommendations',
+          headerShown: false 
+        }} 
+      />
     </Stack>
   );
 }
