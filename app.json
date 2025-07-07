@@ -8,8 +8,6 @@
     "scheme": "wardrobeescape",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "primaryColor": "#667eea",
-    "backgroundColor": "#667eea",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -20,35 +18,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.wardrobeescape.app",
-      "buildNumber": "1.0.0",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Allow Wardrobe Escape to access your camera to take mirror selfies and outfit photos for AI analysis.",
-        "NSPhotoLibraryUsageDescription": "Allow Wardrobe Escape to access your photo library to select outfit photos for analysis.",
-        "NSMicrophoneUsageDescription": "Allow Wardrobe Escape to access your microphone for voice commands and outfit descriptions.",
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["background-fetch", "background-processing"],
-        "UIRequiredDeviceCapabilities": ["arm64"],
-        "UISupportedInterfaceOrientations": [
-          "UIInterfaceOrientationPortrait",
-          "UIInterfaceOrientationPortraitUpsideDown"
-        ],
-        "UIViewControllerBasedStatusBarAppearance": true,
-        "UIStatusBarStyle": "UIStatusBarStyleLightContent",
-        "CFBundleDisplayName": "Wardrobe Escape",
-        "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "1",
-        "LSRequiresIPhoneOS": true,
-        "UIRequiresFullScreen": false,
-        "UILaunchStoryboardName": "SplashScreen"
-      },
-      "associatedDomains": [
-        "applinks:wardrobeescape.com",
-        "applinks:api.wardrobeescape.com"
-      ],
-      "config": {
-        "usesNonExemptEncryption": false
-      }
+      "bundleIdentifier": "com.wardrobeescape.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -56,12 +26,6 @@
         "backgroundColor": "#667eea"
       },
       "package": "com.wardrobeescape.app",
-      "versionCode": 1,
-      "permissions": [
-        "CAMERA",
-        "WRITE_EXTERNAL_STORAGE",
-        "READ_EXTERNAL_STORAGE"
-      ],
       "edgeToEdgeEnabled": true
     },
     "web": {
@@ -83,48 +47,12 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Wardrobe Escape to access your camera to take mirror selfies and outfit photos for AI analysis.",
-          "microphonePermission": "Allow Wardrobe Escape to access your microphone for voice commands and outfit descriptions.",
-          "recordAudioAndroid": true
-        }
-      ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "Allow Wardrobe Escape to access your photo library to select outfit photos for analysis.",
-          "savePhotosPermission": "Allow Wardrobe Escape to save outfit photos to your photo library.",
-          "isAccessMediaLocationEnabled": true
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app accesses your photos to let you select outfit images for analysis.",
-          "cameraPermission": "The app accesses your camera to let you take outfit photos for analysis."
+          "cameraPermission": "Allow Wardrobe Escape to access your camera to take mirror selfies and outfit photos."
         }
       ]
     ],
     "experiments": {
-      "typedRoutes": true,
-      "tsconfigPaths": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "wardrobe-escape-project"
-      },
-      "apiUrl": "https://api.wardrobeescape.com",
-      "environment": "production"
-    },
-    "hooks": {
-      "postPublish": [
-        {
-          "file": "sentry-expo/upload-sourcemaps",
-          "config": {
-            "organization": "wardrobe-escape",
-            "project": "wardrobe-escape-app"
-          }
-        }
-      ]
+      "typedRoutes": true
     }
   }
 }
