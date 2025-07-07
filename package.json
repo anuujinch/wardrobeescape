@@ -9,11 +9,6 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build": "expo build",
-    "build:ios": "eas build --platform ios",
-    "build:android": "eas build --platform android",
-    "submit:ios": "eas submit --platform ios",
-    "submit:android": "eas submit --platform android",
     "preview": "expo start --tunnel"
   },
   "dependencies": {
@@ -28,7 +23,6 @@
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.3.2",
-    "expo-image-picker": "~16.1.6",
     "expo-linking": "~7.1.7",
     "expo-media-library": "~17.1.7",
     "expo-router": "~5.1.3",
@@ -46,36 +40,14 @@
     "react-native-screens": "~4.11.1",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "expo-linear-gradient": "~14.1.5",
-    "expo-av": "~15.1.10",
-    "expo-file-system": "~18.1.11",
-    "expo-location": "~18.1.8",
-    "expo-notifications": "~0.30.14",
-    "expo-secure-store": "~14.1.5",
-    "expo-sensors": "~14.1.4",
-    "expo-device": "~7.1.5",
-    "expo-application": "~6.1.8",
-    "expo-clipboard": "~7.1.6",
-    "expo-sharing": "~13.1.5",
-    "expo-sqlite": "~15.1.5",
-    "lottie-react-native": "7.1.0",
-    "react-native-svg": "15.8.0",
-    "react-native-size-matters": "^0.4.2",
-    "react-native-super-grid": "^6.0.1",
-    "react-native-snap-carousel": "^3.9.1",
-    "react-native-vector-icons": "^10.2.0"
+    "expo-linear-gradient": "~14.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
-    "@types/react-native": "~0.73.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
-    "typescript": "~5.8.3",
-    "eas-cli": "^12.0.0"
+    "typescript": "~5.8.3"
   },
-  "private": true,
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "private": true
 }
