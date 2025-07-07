@@ -11,7 +11,15 @@ interface ClothingItem {
 }
 
 export default function WardrobeAssessmentScreen() {
-  const [wardrobe, setWardrobe] = useState<ClothingItem[]>([]);
+  const [wardrobe, setWardrobe] = useState<ClothingItem[]>([
+    // Sample items to demonstrate AI functionality
+    { id: '1', name: 'Black Blazer', category: 'Outerwear' },
+    { id: '2', name: 'White Button Shirt', category: 'Tops' },
+    { id: '3', name: 'Dark Jeans', category: 'Bottoms' },
+    { id: '4', name: 'Leather Boots', category: 'Shoes' },
+    { id: '5', name: 'Casual T-Shirt', category: 'Tops' },
+    { id: '6', name: 'Dress Pants', category: 'Bottoms' },
+  ]);
   const [newItem, setNewItem] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [eventType, setEventType] = useState('');
@@ -51,20 +59,16 @@ export default function WardrobeAssessmentScreen() {
       return;
     }
 
-    // Simulate AI outfit generation
-    Alert.alert(
-      'Outfit Generated!',
-      `Perfect! Based on your ${eventType.toLowerCase()} event and ${mood.toLowerCase()} mood, I've selected the best outfit from your wardrobe.`,
-      [
-        {
-          text: 'View Outfit',
-          onPress: () => {
-            // Navigate to outfit display screen (to be implemented)
-            router.back();
-          },
-        },
-      ]
-    );
+    // Navigate to AI outfit recommendations screen
+    const wardrobeParam = JSON.stringify(wardrobe);
+    router.push({
+      pathname: '/outfit-recommendations',
+      params: {
+        wardrobe: wardrobeParam,
+        eventType,
+        mood,
+      },
+    });
   };
 
   return (
@@ -185,6 +189,43 @@ export default function WardrobeAssessmentScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* Quick Start Suggestions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Start</Text>
+          <View style={styles.quickStartContainer}>
+            <TouchableOpacity 
+              style={styles.quickStartButton}
+              onPress={() => {
+                setEventType('Work');
+                setMood('Confident');
+              }}
+            >
+              <Ionicons name="briefcase" size={20} color="#667eea" />
+              <Text style={styles.quickStartText}>Work Day</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickStartButton}
+              onPress={() => {
+                setEventType('Date Night');
+                setMood('Bold');
+              }}
+            >
+              <Ionicons name="heart" size={20} color="#667eea" />
+              <Text style={styles.quickStartText}>Date Night</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickStartButton}
+              onPress={() => {
+                setEventType('Casual');
+                setMood('Relaxed');
+              }}
+            >
+              <Ionicons name="cafe" size={20} color="#667eea" />
+              <Text style={styles.quickStartText}>Weekend</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -349,5 +390,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  quickStartContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  quickStartButton: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#667eea',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    gap: 4,
+  },
+  quickStartText: {
+    color: '#667eea',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
