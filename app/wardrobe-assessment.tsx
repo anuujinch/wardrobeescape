@@ -274,15 +274,22 @@ export default function WardrobeAssessment() {
   };
 
   const handleRemoveItem = (itemId: string) => {
+    console.log('Long press detected for item:', itemId);
+    const item = wardrobeItems.find(w => w.id === itemId);
+    console.log('Found item:', item);
+    
     Alert.alert(
       'Remove Item',
-      'Are you sure you want to remove this item from your wardrobe?',
+      `Are you sure you want to remove "${item?.name}" from your wardrobe?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Remove', 
           style: 'destructive',
-          onPress: () => setWardrobeItems(prev => prev.filter(item => item.id !== itemId))
+          onPress: () => {
+            console.log('Removing item:', itemId);
+            setWardrobeItems(prev => prev.filter(item => item.id !== itemId));
+          }
         }
       ]
     );
@@ -297,29 +304,23 @@ export default function WardrobeAssessment() {
   };
 
   const nextAddClothesStep = () => {
-    console.log('Next button pressed');
-    console.log('Current step:', addClothesStep);
-    console.log('Item name:', newClothingName);
-    console.log('Item color:', newClothingColor);
+
     
     if (addClothesStep === 0) {
       if (!newClothingName.trim()) {
-        console.log('Name validation failed');
+
         Alert.alert('Missing Name', 'Please enter a name for the clothing item!');
         return;
       }
       if (!newClothingColor) {
-        console.log('Color validation failed');
+
         Alert.alert('Missing Color', 'Please select a color!');
         return;
       }
     }
     
     if (addClothesStep < 2) {
-      console.log('Moving to next step:', addClothesStep + 1);
       setAddClothesStep(prev => prev + 1);
-    } else {
-      console.log('Already at last step');
     }
   };
 
@@ -353,19 +354,31 @@ export default function WardrobeAssessment() {
     }
 
     try {
-      const recommendations = await AIOutfitRecommendationService.generateOutfitRecommendations(
-        wardrobeItems,
-        filters.eventType,
-        filters.mood,
-        {
-          weather: filters.weather,
-          timeOfDay: filters.timeOfDay,
-        }
-      );
+      console.log('Generating outfit with:', { wardrobeItems, filters });
+      
+      // Convert wardrobe items to the format expected by AI service
+      const clothingItems = wardrobeItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category
+      }));
+      
+      const preferences = {
+        eventType: filters.eventType,
+        mood: filters.mood,
+        seasonality: filters.weather,
+        colorPreference: 'any'
+      };
+      
+      const aiService = new AIOutfitRecommendationService();
+      const recommendations = aiService.generateOutfitRecommendations(clothingItems, preferences);
+      
+      console.log('Generated recommendations:', recommendations);
 
       router.push({
         pathname: '/outfit-recommendations',
         params: {
+          wardrobe: JSON.stringify(clothingItems),
           recommendations: JSON.stringify(recommendations),
           eventType: filters.eventType,
           mood: filters.mood,
@@ -422,12 +435,8 @@ export default function WardrobeAssessment() {
             selectedCategory === category.id && styles.selectedCategory,
           ]}
           onPress={() => {
-            console.log('Category pressed:', category.name);
-            Alert.alert('Category Pressed', `You pressed ${category.name}. Opening modal...`);
             setSelectedCategory(category.id);
             setIsAddClothesModalVisible(true);
-            console.log('Modal should be visible now');
-            console.log('Modal state:', isAddClothesModalVisible);
           }}
         >
           <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
@@ -566,7 +575,10 @@ export default function WardrobeAssessment() {
                   <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
                     <TouchableOpacity
                       style={styles.wardrobeItemContainer}
-                      onLongPress={() => handleRemoveItem(item.id)}
+                      onLongPress={() => {
+                        console.log('Long press triggered on item:', item.name);
+                        handleRemoveItem(item.id);
+                      }}
                     >
                       <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
                         <View style={styles.itemHeader}>
@@ -640,7 +652,7 @@ export default function WardrobeAssessment() {
           visible={isAddClothesModalVisible}
           onRequestClose={resetAddClothesForm}
         >
-          {console.log('Modal rendering, visible:', isAddClothesModalVisible)}
+
           <View style={styles.modalOverlay}>
             <BlurView intensity={100} tint="dark" style={styles.addClothesModalBlur}>
               <View style={styles.addClothesModalContent}>
