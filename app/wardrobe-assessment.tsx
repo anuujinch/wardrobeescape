@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     Animated,
     Dimensions,
+    Image,
     Modal,
+    RefreshControl,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -15,20 +17,13 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import AddClothingModal from '../components/AddClothingModal';
 import { AIOutfitRecommendationService } from '../services/AIOutfitRecommendationService';
+import wardrobeService, { WardrobeItem } from '../services/WardrobeService';
 
 const { width, height } = Dimensions.get('window');
 
-interface WardrobeItem {
-  id: string;
-  name: string;
-  category: string;
-  color: string;
-  material: string;
-  occasion: string[];
-  icon: string;
-  image?: string;
-}
+// Using WardrobeItem from service - interface removed
 
 interface Filters {
   eventType: string;
@@ -38,12 +33,12 @@ interface Filters {
 }
 
 const CLOTHING_CATEGORIES = [
-  { id: 'tops', name: 'Tops', icon: 'shirt-outline', color: '#667eea' },
-  { id: 'bottoms', name: 'Bottoms', icon: 'fitness-outline', color: '#764ba2' },
-  { id: 'dresses', name: 'Dresses', icon: 'woman-outline', color: '#f093fb' },
-  { id: 'shoes', name: 'Shoes', icon: 'footsteps-outline', color: '#f5576c' },
-  { id: 'accessories', name: 'Accessories', icon: 'diamond-outline', color: '#4facfe' },
-  { id: 'outerwear', name: 'Outerwear', icon: 'snow-outline', color: '#00f2fe' },
+  { id: 'Tops', name: 'Tops', icon: 'shirt-outline', color: '#667eea' },
+  { id: 'Bottoms', name: 'Bottoms', icon: 'fitness-outline', color: '#764ba2' },
+  { id: 'Dresses', name: 'Dresses', icon: 'woman-outline', color: '#f093fb' },
+  { id: 'Shoes', name: 'Shoes', icon: 'footsteps-outline', color: '#f5576c' },
+  { id: 'Accessories', name: 'Accessories', icon: 'diamond-outline', color: '#4facfe' },
+  { id: 'Outerwear', name: 'Outerwear', icon: 'snow-outline', color: '#00f2fe' },
 ];
 
 const EVENT_TYPES = [
@@ -76,10 +71,13 @@ export default function WardrobeAssessment() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    initializeWardrobe();
+    loadWardrobeItems();
     animateEntrance();
   }, []);
 
@@ -98,55 +96,72 @@ export default function WardrobeAssessment() {
     ]).start();
   };
 
-  const initializeWardrobe = () => {
-    const sampleItems: WardrobeItem[] = [
-      {
-        id: '1',
-        name: 'White Button-Down Shirt',
-        category: 'tops',
-        color: 'white',
-        material: 'cotton',
-        occasion: ['work', 'casual', 'formal'],
-        icon: 'shirt-outline',
-      },
-      {
-        id: '2',
-        name: 'Black Skinny Jeans',
-        category: 'bottoms',
-        color: 'black',
-        material: 'denim',
-        occasion: ['casual', 'date', 'party'],
-        icon: 'fitness-outline',
-      },
-      {
-        id: '3',
-        name: 'Little Black Dress',
-        category: 'dresses',
-        color: 'black',
-        material: 'polyester',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'woman-outline',
-      },
-      {
-        id: '4',
-        name: 'Black Leather Boots',
-        category: 'shoes',
-        color: 'black',
-        material: 'leather',
-        occasion: ['work', 'casual', 'date'],
-        icon: 'footsteps-outline',
-      },
-      {
-        id: '5',
-        name: 'Statement Necklace',
-        category: 'accessories',
-        color: 'gold',
-        material: 'metal',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'diamond-outline',
-      },
-    ];
-    setWardrobeItems(sampleItems);
+  const loadWardrobeItems = async () => {
+    try {
+      setLoading(true);
+      const items = await wardrobeService.getWardrobeItems();
+      setWardrobeItems(items);
+    } catch (error) {
+      console.error('Error loading wardrobe items:', error);
+      // Fallback to sample data if API fails
+      const sampleItems: WardrobeItem[] = [
+        {
+          name: 'White Button-Down Shirt',
+          category: 'Tops',
+          colors: [{ primary: 'white' }],
+          material: { fabric: 'cotton' },
+          style: 'business',
+          season: ['all-season'],
+        },
+        {
+          name: 'Black Skinny Jeans',
+          category: 'Bottoms',
+          colors: [{ primary: 'black' }],
+          material: { fabric: 'denim' },
+          style: 'casual',
+          season: ['fall', 'winter'],
+        },
+        {
+          name: 'Little Black Dress',
+          category: 'Dresses',
+          colors: [{ primary: 'black' }],
+          material: { fabric: 'polyester' },
+          style: 'formal',
+          season: ['all-season'],
+        },
+      ];
+      setWardrobeItems(sampleItems);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadWardrobeItems();
+    setRefreshing(false);
+  }, []);
+
+  const handleAddClothingItem = async (item: Omit<WardrobeItem, '_id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const newItem = await wardrobeService.addWardrobeItem(item);
+      setWardrobeItems(prev => [newItem, ...prev]);
+      Alert.alert('Success', 'Clothing item added successfully!');
+    } catch (error) {
+      console.error('Error adding item:', error);
+      throw error; // Re-throw to let modal handle the error
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      await wardrobeService.deleteWardrobeItem(itemId);
+      setWardrobeItems(prev => prev.filter(item => item._id !== itemId));
+      Alert.alert('Success', 'Item removed from wardrobe');
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      Alert.alert('Error', 'Failed to remove item');
+    }
   };
 
   const handleGenerateOutfit = async () => {
@@ -219,27 +234,37 @@ export default function WardrobeAssessment() {
     );
   };
 
-  const CategoryCard = ({ category, index }: { category: any; index: number }) => (
-    <AnimatedCard delay={index * 100} style={styles.categoryCard}>
-      <TouchableOpacity
-        style={[
-          styles.categoryButton,
-          selectedCategory === category.id && styles.selectedCategory,
-        ]}
-        onPress={() => setSelectedCategory(category.id)}
-      >
-        <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
-          <LinearGradient
-            colors={[category.color, `${category.color}80`]}
-            style={styles.categoryGradient}
-          >
-            <Ionicons name={category.icon} size={32} color="white" />
-            <Text style={styles.categoryText}>{category.name}</Text>
-          </LinearGradient>
-        </BlurView>
-      </TouchableOpacity>
-    </AnimatedCard>
-  );
+  const CategoryCard = ({ category, index }: { category: any; index: number }) => {
+    const categoryItems = wardrobeItems.filter(item => item.category === category.id);
+    
+    return (
+      <AnimatedCard delay={index * 100} style={styles.categoryCard}>
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            selectedCategory === category.id && styles.selectedCategory,
+          ]}
+          onPress={() => {
+            setSelectedCategory(category.id);
+            setIsAddModalVisible(true);
+          }}
+        >
+          <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
+            <LinearGradient
+              colors={[category.color, `${category.color}80`]}
+              style={styles.categoryGradient}
+            >
+              <Ionicons name={category.icon} size={32} color="white" />
+              <Text style={styles.categoryText}>{category.name}</Text>
+              <Text style={styles.categoryCount}>
+                {categoryItems.length} {categoryItems.length === 1 ? 'item' : 'items'}
+              </Text>
+            </LinearGradient>
+          </BlurView>
+        </TouchableOpacity>
+      </AnimatedCard>
+    );
+  };
 
   const FilterSection = ({ title, options, selectedValue, onSelect, icon }: any) => (
     <View style={styles.filterSection}>
@@ -324,7 +349,17 @@ export default function WardrobeAssessment() {
 
           <ProgressBar />
 
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="white"
+                colors={['#667eea']}
+              />
+            }
+          >
             {/* Categories Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Clothing Categories</Text>
@@ -358,21 +393,82 @@ export default function WardrobeAssessment() {
 
             {/* Wardrobe Items */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Wardrobe</Text>
-              <Text style={styles.sectionDescription}>
-                {wardrobeItems.length} items ready for styling
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
-                {wardrobeItems.map((item, index) => (
-                  <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
-                    <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
-                      <Ionicons name={item.icon} size={24} color="#667eea" />
-                      <Text style={styles.wardrobeItemName}>{item.name}</Text>
-                      <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
-                    </BlurView>
-                  </AnimatedCard>
-                ))}
-              </ScrollView>
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={styles.sectionTitle}>Your Wardrobe</Text>
+                  <Text style={styles.sectionDescription}>
+                    {wardrobeItems.length} items ready for styling
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => {
+                    setSelectedCategory('');
+                    setIsAddModalVisible(true);
+                  }}
+                >
+                  <LinearGradient
+                    colors={['#667eea', '#764ba2']}
+                    style={styles.addButtonGradient}
+                  >
+                    <Ionicons name="add" size={20} color="white" />
+                    <Text style={styles.addButtonText}>Add Item</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+              
+              {wardrobeItems.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
+                  {wardrobeItems.map((item, index) => (
+                    <AnimatedCard key={item._id || index} delay={index * 100} style={styles.wardrobeItem}>
+                      <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
+                        <TouchableOpacity
+                          style={styles.deleteButton}
+                          onPress={() => item._id && handleDeleteItem(item._id)}
+                        >
+                          <Ionicons name="close-circle" size={16} color="#f5576c" />
+                        </TouchableOpacity>
+                        
+                        {item.images?.[0] ? (
+                          <Image 
+                            source={{ uri: item.images[0].url }} 
+                            style={styles.itemImage}
+                          />
+                        ) : (
+                          <View style={styles.itemIconContainer}>
+                            <Ionicons 
+                              name={CLOTHING_CATEGORIES.find(cat => cat.id === item.category)?.icon || 'shirt-outline'} 
+                              size={24} 
+                              color="#667eea" 
+                            />
+                          </View>
+                        )}
+                        
+                        <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
+                        <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
+                        
+                        {item.colors?.[0] && (
+                          <View style={styles.colorIndicator}>
+                            <View 
+                              style={[
+                                styles.colorDot, 
+                                { backgroundColor: item.colors[0].primary === 'white' ? '#f8f9fa' : item.colors[0].primary }
+                              ]} 
+                            />
+                            <Text style={styles.colorText}>{item.colors[0].primary}</Text>
+                          </View>
+                        )}
+                      </BlurView>
+                    </AnimatedCard>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.emptyWardrobe}>
+                  <Ionicons name="shirt-outline" size={48} color="rgba(255,255,255,0.3)" />
+                  <Text style={styles.emptyText}>No clothing items yet</Text>
+                  <Text style={styles.emptySubtext}>Tap "Add Item" or select a category above to get started</Text>
+                </View>
+              )}
             </View>
 
             {/* Generate Button */}
@@ -403,7 +499,7 @@ export default function WardrobeAssessment() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>How to Use</Text>
                 <Text style={styles.modalText}>
-                  1. Select clothing categories to build your wardrobe{'\n'}
+                  1. Select clothing categories to add items to your wardrobe{'\n'}
                   2. Choose your event type and mood{'\n'}
                   3. Let our AI generate perfect outfit recommendations{'\n'}
                   4. Save your favorite combinations
@@ -418,6 +514,17 @@ export default function WardrobeAssessment() {
             </BlurView>
           </View>
         </Modal>
+
+        {/* Add Clothing Modal */}
+        <AddClothingModal
+          visible={isAddModalVisible}
+          onClose={() => {
+            setIsAddModalVisible(false);
+            setSelectedCategory('');
+          }}
+          onAdd={handleAddClothingItem}
+          preselectedCategory={selectedCategory}
+        />
       </LinearGradient>
     </SafeAreaView>
   );
@@ -516,6 +623,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
   },
+  categoryCount: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 10,
+    marginTop: 2,
+  },
   selectedCategory: {
     borderWidth: 2,
     borderColor: 'white',
@@ -586,6 +698,85 @@ const styles = StyleSheet.create({
     color: 'rgba(102, 126, 234, 0.7)',
     textAlign: 'center',
     marginTop: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  addButton: {
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  addButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    zIndex: 1,
+    backgroundColor: 'white',
+    borderRadius: 8,
+  },
+  itemImage: {
+    width: 60,
+    height: 80,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  itemIconContainer: {
+    width: 60,
+    height: 80,
+    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  colorIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  colorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  colorText: {
+    fontSize: 8,
+    color: 'rgba(102, 126, 234, 0.7)',
+  },
+  emptyWardrobe: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  emptySubtext: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    paddingHorizontal: 20,
   },
   generateButton: {
     borderRadius: 25,
