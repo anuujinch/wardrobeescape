@@ -532,10 +532,22 @@ export default function WardrobeAssessment() {
                       onLongPress={() => handleRemoveItem(item.id)}
                     >
                       <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
-                        <Ionicons name={item.icon} size={24} color="#667eea" />
-                        <Text style={styles.wardrobeItemName}>{item.name}</Text>
-                        <Text style={styles.wardrobeItemDetails}>{item.color} {item.material}</Text>
+                        <View style={styles.itemHeader}>
+                          <Ionicons name={item.icon} size={28} color="#667eea" />
+                          <View style={[styles.colorDot, { backgroundColor: COLORS.find(c => c.name === item.color)?.hex || '#ccc' }]} />
+                        </View>
+                        <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
+                        <Text style={styles.wardrobeItemDetails}>
+                          {item.color} • {item.material}
+                        </Text>
                         <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
+                        <View style={styles.occasionTags}>
+                          {item.occasion.slice(0, 2).map((occ, idx) => (
+                            <View key={idx} style={styles.occasionTag}>
+                              <Text style={styles.occasionTagText}>{occ}</Text>
+                            </View>
+                          ))}
+                        </View>
                       </BlurView>
                     </TouchableOpacity>
                   </AnimatedCard>
