@@ -297,19 +297,29 @@ export default function WardrobeAssessment() {
   };
 
   const nextAddClothesStep = () => {
+    console.log('Next button pressed');
+    console.log('Current step:', addClothesStep);
+    console.log('Item name:', newClothingName);
+    console.log('Item color:', newClothingColor);
+    
     if (addClothesStep === 0) {
       if (!newClothingName.trim()) {
+        console.log('Name validation failed');
         Alert.alert('Missing Name', 'Please enter a name for the clothing item!');
         return;
       }
       if (!newClothingColor) {
+        console.log('Color validation failed');
         Alert.alert('Missing Color', 'Please select a color!');
         return;
       }
     }
     
     if (addClothesStep < 2) {
+      console.log('Moving to next step:', addClothesStep + 1);
       setAddClothesStep(prev => prev + 1);
+    } else {
+      console.log('Already at last step');
     }
   };
 
@@ -647,7 +657,12 @@ export default function WardrobeAssessment() {
                       style={[styles.stepProgressFill, { width: `${((addClothesStep + 1) / 3) * 100}%` }]}
                     />
                   </View>
-                  <Text style={styles.stepProgressText}>Step {addClothesStep + 1} of 3</Text>
+                  <Text style={styles.stepProgressText}>
+                    Step {addClothesStep + 1} of 3 
+                    {addClothesStep === 0 && ' - Basic Info'}
+                    {addClothesStep === 1 && ' - Details'}
+                    {addClothesStep === 2 && ' - Occasions & Summary'}
+                  </Text>
                 </View>
 
                 <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
@@ -662,7 +677,10 @@ export default function WardrobeAssessment() {
                         <TextInput
                           style={styles.textInput}
                           value={newClothingName}
-                          onChangeText={setNewClothingName}
+                          onChangeText={(text) => {
+                            console.log('Name changed:', text);
+                            setNewClothingName(text);
+                          }}
                           placeholder="e.g., Blue Cotton T-Shirt"
                           placeholderTextColor="rgba(255,255,255,0.5)"
                         />
@@ -678,7 +696,10 @@ export default function WardrobeAssessment() {
                                 styles.colorOption,
                                 newClothingColor === color.name && styles.selectedColorOption
                               ]}
-                              onPress={() => setNewClothingColor(color.name)}
+                              onPress={() => {
+                                console.log('Color selected:', color.name);
+                                setNewClothingColor(color.name);
+                              }}
                             >
                               <View style={[styles.colorCircle, { backgroundColor: color.hex }]} />
                               <Text style={[
@@ -863,6 +884,23 @@ export default function WardrobeAssessment() {
 
                 {/* Navigation Buttons */}
                 <View style={styles.modalActions}>
+                  {/* Temporary Test Button */}
+                  <TouchableOpacity
+                    style={[styles.nextButton, { backgroundColor: 'orange', marginBottom: 10 }]}
+                    onPress={() => {
+                      console.log('Test button pressed - forcing next step');
+                      setAddClothesStep(prev => {
+                        const newStep = prev < 2 ? prev + 1 : 0;
+                        console.log('Forcing step change from', prev, 'to', newStep);
+                        return newStep;
+                      });
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                      TEST: Force Next Step (Current: {addClothesStep})
+                    </Text>
+                  </TouchableOpacity>
+
                   {addClothesStep > 0 && (
                     <TouchableOpacity
                       style={styles.backButton}
