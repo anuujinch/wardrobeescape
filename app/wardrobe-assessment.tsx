@@ -12,6 +12,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -64,6 +65,16 @@ const MOOD_TYPES = [
   { id: 'minimalist', name: 'Minimalist', icon: 'remove-outline', color: '#00f2fe' },
 ];
 
+const COLORS = [
+  'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Brown', 
+  'Black', 'White', 'Gray', 'Navy', 'Beige', 'Cream', 'Maroon', 'Teal'
+];
+
+const MATERIALS = [
+  'Cotton', 'Denim', 'Leather', 'Wool', 'Silk', 'Polyester', 'Linen', 
+  'Cashmere', 'Velvet', 'Synthetic', 'Canvas', 'Fleece'
+];
+
 export default function WardrobeAssessment() {
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [filters, setFilters] = useState<Filters>({
@@ -76,7 +87,14 @@ export default function WardrobeAssessment() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddClothesModalVisible, setIsAddClothesModalVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  
+  // Add clothes form state
+  const [newClothingName, setNewClothingName] = useState('');
+  const [newClothingColor, setNewClothingColor] = useState('');
+  const [newClothingMaterial, setNewClothingMaterial] = useState('');
+  const [newClothingOccasions, setNewClothingOccasions] = useState<string[]>([]);
 
   useEffect(() => {
     initializeWardrobe();
@@ -147,6 +165,70 @@ export default function WardrobeAssessment() {
       },
     ];
     setWardrobeItems(sampleItems);
+  };
+
+  const handleAddClothingItem = () => {
+    if (!selectedCategory) {
+      Alert.alert('No Category Selected', 'Please select a category first!');
+      return;
+    }
+    if (!newClothingName.trim()) {
+      Alert.alert('Missing Name', 'Please enter a name for the clothing item!');
+      return;
+    }
+    if (!newClothingColor) {
+      Alert.alert('Missing Color', 'Please select a color!');
+      return;
+    }
+    if (!newClothingMaterial) {
+      Alert.alert('Missing Material', 'Please select a material!');
+      return;
+    }
+
+    const categoryInfo = CLOTHING_CATEGORIES.find(cat => cat.id === selectedCategory);
+    const newItem: WardrobeItem = {
+      id: Date.now().toString(),
+      name: newClothingName.trim(),
+      category: selectedCategory,
+      color: newClothingColor,
+      material: newClothingMaterial,
+      occasion: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
+      icon: categoryInfo?.icon || 'shirt-outline',
+    };
+
+    setWardrobeItems(prev => [...prev, newItem]);
+    
+    // Reset form
+    setNewClothingName('');
+    setNewClothingColor('');
+    setNewClothingMaterial('');
+    setNewClothingOccasions([]);
+    setIsAddClothesModalVisible(false);
+    
+    Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    Alert.alert(
+      'Remove Item',
+      'Are you sure you want to remove this item from your wardrobe?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => setWardrobeItems(prev => prev.filter(item => item.id !== itemId))
+        }
+      ]
+    );
+  };
+
+  const toggleOccasion = (occasionId: string) => {
+    setNewClothingOccasions(prev => 
+      prev.includes(occasionId) 
+        ? prev.filter(id => id !== occasionId)
+        : [...prev, occasionId]
+    );
   };
 
   const handleGenerateOutfit = async () => {
@@ -226,7 +308,10 @@ export default function WardrobeAssessment() {
           styles.categoryButton,
           selectedCategory === category.id && styles.selectedCategory,
         ]}
-        onPress={() => setSelectedCategory(category.id)}
+        onPress={() => {
+          setSelectedCategory(category.id);
+          setIsAddClothesModalVisible(true);
+        }}
       >
         <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
           <LinearGradient
@@ -235,6 +320,9 @@ export default function WardrobeAssessment() {
           >
             <Ionicons name={category.icon} size={32} color="white" />
             <Text style={styles.categoryText}>{category.name}</Text>
+            <View style={styles.addIconContainer}>
+              <Ionicons name="add-circle" size={20} color="white" />
+            </View>
           </LinearGradient>
         </BlurView>
       </TouchableOpacity>
@@ -327,15 +415,50 @@ export default function WardrobeAssessment() {
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Categories Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Clothing Categories</Text>
+              <Text style={styles.sectionTitle}>Add Clothing Items</Text>
               <Text style={styles.sectionDescription}>
-                Select a category to add items to your wardrobe
+                Tap any category to add clothes to your wardrobe
               </Text>
               <View style={styles.categoriesGrid}>
                 {CLOTHING_CATEGORIES.map((category, index) => (
                   <CategoryCard key={category.id} category={category} index={index} />
                 ))}
               </View>
+            </View>
+
+            {/* Wardrobe Items */}
+            <View style={styles.section}>
+              <View style={styles.wardrobeHeader}>
+                <Text style={styles.sectionTitle}>Your Wardrobe</Text>
+                <Text style={styles.itemCount}>{wardrobeItems.length} items</Text>
+              </View>
+              <Text style={styles.sectionDescription}>
+                Long press any item to remove it
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
+                {wardrobeItems.map((item, index) => (
+                  <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
+                    <TouchableOpacity
+                      style={styles.wardrobeItemContainer}
+                      onLongPress={() => handleRemoveItem(item.id)}
+                    >
+                      <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
+                        <Ionicons name={item.icon} size={24} color="#667eea" />
+                        <Text style={styles.wardrobeItemName}>{item.name}</Text>
+                        <Text style={styles.wardrobeItemDetails}>{item.color} {item.material}</Text>
+                        <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
+                      </BlurView>
+                    </TouchableOpacity>
+                  </AnimatedCard>
+                ))}
+                {wardrobeItems.length === 0 && (
+                  <View style={styles.emptyWardrobe}>
+                    <Ionicons name="shirt-outline" size={48} color="rgba(255,255,255,0.5)" />
+                    <Text style={styles.emptyWardrobeText}>No items yet</Text>
+                    <Text style={styles.emptyWardrobeSubtext}>Tap a category above to add clothes</Text>
+                  </View>
+                )}
+              </ScrollView>
             </View>
 
             {/* Event Type Filter */}
@@ -356,25 +479,6 @@ export default function WardrobeAssessment() {
               icon="heart-outline"
             />
 
-            {/* Wardrobe Items */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Wardrobe</Text>
-              <Text style={styles.sectionDescription}>
-                {wardrobeItems.length} items ready for styling
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
-                {wardrobeItems.map((item, index) => (
-                  <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
-                    <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
-                      <Ionicons name={item.icon} size={24} color="#667eea" />
-                      <Text style={styles.wardrobeItemName}>{item.name}</Text>
-                      <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
-                    </BlurView>
-                  </AnimatedCard>
-                ))}
-              </ScrollView>
-            </View>
-
             {/* Generate Button */}
             <TouchableOpacity
               style={styles.generateButton}
@@ -391,6 +495,137 @@ export default function WardrobeAssessment() {
           </ScrollView>
         </Animated.View>
 
+        {/* Add Clothes Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={isAddClothesModalVisible}
+          onRequestClose={() => setIsAddClothesModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <BlurView intensity={100} tint="dark" style={styles.addClothesModalBlur}>
+              <ScrollView contentContainerStyle={styles.addClothesModalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.addClothesModalTitle}>
+                    Add {CLOTHING_CATEGORIES.find(cat => cat.id === selectedCategory)?.name}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setIsAddClothesModalVisible(false)}
+                  >
+                    <Ionicons name="close" size={24} color="white" />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.formSection}>
+                  <Text style={styles.formLabel}>Item Name *</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    value={newClothingName}
+                    onChangeText={setNewClothingName}
+                    placeholder="e.g., Blue Cotton T-Shirt"
+                    placeholderTextColor="rgba(255,255,255,0.5)"
+                  />
+                </View>
+
+                <View style={styles.formSection}>
+                  <Text style={styles.formLabel}>Color *</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorOptions}>
+                    {COLORS.map(color => (
+                      <TouchableOpacity
+                        key={color}
+                        style={[
+                          styles.colorOption,
+                          newClothingColor === color && styles.selectedColorOption
+                        ]}
+                        onPress={() => setNewClothingColor(color)}
+                      >
+                        <Text style={[
+                          styles.colorOptionText,
+                          newClothingColor === color && styles.selectedColorOptionText
+                        ]}>
+                          {color}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View style={styles.formSection}>
+                  <Text style={styles.formLabel}>Material *</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.materialOptions}>
+                    {MATERIALS.map(material => (
+                      <TouchableOpacity
+                        key={material}
+                        style={[
+                          styles.materialOption,
+                          newClothingMaterial === material && styles.selectedMaterialOption
+                        ]}
+                        onPress={() => setNewClothingMaterial(material)}
+                      >
+                        <Text style={[
+                          styles.materialOptionText,
+                          newClothingMaterial === material && styles.selectedMaterialOptionText
+                        ]}>
+                          {material}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View style={styles.formSection}>
+                  <Text style={styles.formLabel}>Suitable Occasions (Optional)</Text>
+                  <View style={styles.occasionGrid}>
+                    {EVENT_TYPES.map(event => (
+                      <TouchableOpacity
+                        key={event.id}
+                        style={[
+                          styles.occasionOption,
+                          newClothingOccasions.includes(event.id) && styles.selectedOccasionOption
+                        ]}
+                        onPress={() => toggleOccasion(event.id)}
+                      >
+                        <Ionicons 
+                          name={event.icon} 
+                          size={16} 
+                          color={newClothingOccasions.includes(event.id) ? 'white' : '#667eea'} 
+                        />
+                        <Text style={[
+                          styles.occasionOptionText,
+                          newClothingOccasions.includes(event.id) && styles.selectedOccasionOptionText
+                        ]}>
+                          {event.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setIsAddClothesModalVisible(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={handleAddClothingItem}
+                  >
+                    <LinearGradient
+                      colors={['#667eea', '#764ba2']}
+                      style={styles.addButtonGradient}
+                    >
+                      <Text style={styles.addButtonText}>Add to Wardrobe</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </BlurView>
+          </View>
+        </Modal>
+
         {/* Help Modal */}
         <Modal
           animationType="slide"
@@ -403,10 +638,11 @@ export default function WardrobeAssessment() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>How to Use</Text>
                 <Text style={styles.modalText}>
-                  1. Select clothing categories to build your wardrobe{'\n'}
-                  2. Choose your event type and mood{'\n'}
-                  3. Let our AI generate perfect outfit recommendations{'\n'}
-                  4. Save your favorite combinations
+                  1. Tap clothing categories to add items to your wardrobe{'\n'}
+                  2. Fill in details like name, color, and material{'\n'}
+                  3. Choose your event type and mood{'\n'}
+                  4. Let our AI generate perfect outfit recommendations{'\n'}
+                  5. Long press wardrobe items to remove them
                 </Text>
                 <TouchableOpacity
                   style={styles.modalButton}
@@ -509,6 +745,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     borderRadius: 15,
+    position: 'relative',
   },
   categoryText: {
     color: 'white',
@@ -516,9 +753,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 8,
   },
+  addIconContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
   selectedCategory: {
     borderWidth: 2,
     borderColor: 'white',
+  },
+  wardrobeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  itemCount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   filterSection: {
     marginBottom: 24,
@@ -569,10 +822,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
   },
+  wardrobeItemContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   wardrobeItemBlur: {
     padding: 16,
     alignItems: 'center',
-    minWidth: 120,
+    minWidth: 140,
   },
   wardrobeItemName: {
     fontSize: 12,
@@ -581,11 +838,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
   },
+  wardrobeItemDetails: {
+    fontSize: 10,
+    color: 'rgba(102, 126, 234, 0.8)',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   wardrobeItemCategory: {
     fontSize: 10,
     color: 'rgba(102, 126, 234, 0.7)',
     textAlign: 'center',
     marginTop: 4,
+  },
+  emptyWardrobe: {
+    alignItems: 'center',
+    padding: 40,
+    minWidth: width - 40,
+  },
+  emptyWardrobeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 12,
+  },
+  emptyWardrobeSubtext: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginTop: 4,
+    textAlign: 'center',
   },
   generateButton: {
     borderRadius: 25,
@@ -644,6 +924,158 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Add Clothes Modal Styles
+  addClothesModalBlur: {
+    width: '95%',
+    maxHeight: '90%',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  addClothesModalContent: {
+    padding: 25,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  addClothesModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  formSection: {
+    marginBottom: 20,
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  textInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    padding: 15,
+    color: 'white',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  colorOptions: {
+    flexDirection: 'row',
+  },
+  colorOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  selectedColorOption: {
+    backgroundColor: '#667eea',
+    borderColor: 'white',
+  },
+  colorOptionText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedColorOptionText: {
+    color: 'white',
+  },
+  materialOptions: {
+    flexDirection: 'row',
+  },
+  materialOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  selectedMaterialOption: {
+    backgroundColor: '#764ba2',
+    borderColor: 'white',
+  },
+  materialOptionText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedMaterialOptionText: {
+    color: 'white',
+  },
+  occasionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  occasionOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  selectedOccasionOption: {
+    backgroundColor: '#f093fb',
+    borderColor: 'white',
+  },
+  occasionOptionText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  selectedOccasionOptionText: {
+    color: 'white',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 25,
+    gap: 15,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  cancelButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    flex: 1,
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  addButtonGradient: {
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  addButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
