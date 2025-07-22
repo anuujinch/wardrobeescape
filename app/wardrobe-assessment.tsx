@@ -66,13 +66,52 @@ const MOOD_TYPES = [
 ];
 
 const COLORS = [
-  'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink', 'Brown', 
-  'Black', 'White', 'Gray', 'Navy', 'Beige', 'Cream', 'Maroon', 'Teal'
+  { name: 'Red', hex: '#FF0000' },
+  { name: 'Blue', hex: '#0000FF' },
+  { name: 'Green', hex: '#008000' },
+  { name: 'Yellow', hex: '#FFFF00' },
+  { name: 'Purple', hex: '#800080' },
+  { name: 'Orange', hex: '#FFA500' },
+  { name: 'Pink', hex: '#FFC0CB' },
+  { name: 'Brown', hex: '#A52A2A' },
+  { name: 'Black', hex: '#000000' },
+  { name: 'White', hex: '#FFFFFF' },
+  { name: 'Gray', hex: '#808080' },
+  { name: 'Navy', hex: '#000080' },
+  { name: 'Beige', hex: '#F5F5DC' },
+  { name: 'Cream', hex: '#FFFDD0' },
+  { name: 'Maroon', hex: '#800000' },
+  { name: 'Teal', hex: '#008080' }
 ];
 
 const MATERIALS = [
-  'Cotton', 'Denim', 'Leather', 'Wool', 'Silk', 'Polyester', 'Linen', 
-  'Cashmere', 'Velvet', 'Synthetic', 'Canvas', 'Fleece'
+  { name: 'Cotton', icon: 'leaf-outline' },
+  { name: 'Denim', icon: 'shirt-outline' },
+  { name: 'Leather', icon: 'shield-outline' },
+  { name: 'Wool', icon: 'snow-outline' },
+  { name: 'Silk', icon: 'diamond-outline' },
+  { name: 'Polyester', icon: 'flask-outline' },
+  { name: 'Linen', icon: 'leaf-outline' },
+  { name: 'Cashmere', icon: 'star-outline' },
+  { name: 'Velvet', icon: 'heart-outline' },
+  { name: 'Synthetic', icon: 'construct-outline' },
+  { name: 'Canvas', icon: 'albums-outline' },
+  { name: 'Fleece', icon: 'cloud-outline' }
+];
+
+const SIZES = [
+  'XS', 'S', 'M', 'L', 'XL', 'XXL', '0', '2', '4', '6', '8', '10', '12', '14', '16', '18'
+];
+
+const STYLES = [
+  { name: 'Casual', icon: 'cafe-outline' },
+  { name: 'Formal', icon: 'business-outline' },
+  { name: 'Athletic', icon: 'fitness-outline' },
+  { name: 'Bohemian', icon: 'flower-outline' },
+  { name: 'Vintage', icon: 'time-outline' },
+  { name: 'Modern', icon: 'trending-up-outline' },
+  { name: 'Classic', icon: 'library-outline' },
+  { name: 'Trendy', icon: 'sparkles-outline' }
 ];
 
 export default function WardrobeAssessment() {
@@ -89,12 +128,16 @@ export default function WardrobeAssessment() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAddClothesModalVisible, setIsAddClothesModalVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
   // Add clothes form state
   const [newClothingName, setNewClothingName] = useState('');
   const [newClothingColor, setNewClothingColor] = useState('');
   const [newClothingMaterial, setNewClothingMaterial] = useState('');
   const [newClothingOccasions, setNewClothingOccasions] = useState<string[]>([]);
+  const [newClothingSize, setNewClothingSize] = useState('');
+  const [newClothingStyle, setNewClothingStyle] = useState('');
+  const [newClothingNotes, setNewClothingNotes] = useState('');
 
   useEffect(() => {
     initializeWardrobe();
@@ -203,6 +246,10 @@ export default function WardrobeAssessment() {
     setNewClothingColor('');
     setNewClothingMaterial('');
     setNewClothingOccasions([]);
+    setNewClothingSize('');
+    setNewClothingStyle('');
+    setNewClothingNotes('');
+    setAddClothesStep(0);
     setIsAddClothesModalVisible(false);
     
     Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
@@ -229,6 +276,41 @@ export default function WardrobeAssessment() {
         ? prev.filter(id => id !== occasionId)
         : [...prev, occasionId]
     );
+  };
+
+  const nextAddClothesStep = () => {
+    if (addClothesStep === 0) {
+      if (!newClothingName.trim()) {
+        Alert.alert('Missing Name', 'Please enter a name for the clothing item!');
+        return;
+      }
+      if (!newClothingColor) {
+        Alert.alert('Missing Color', 'Please select a color!');
+        return;
+      }
+    }
+    
+    if (addClothesStep < 2) {
+      setAddClothesStep(prev => prev + 1);
+    }
+  };
+
+  const prevAddClothesStep = () => {
+    if (addClothesStep > 0) {
+      setAddClothesStep(prev => prev - 1);
+    }
+  };
+
+  const resetAddClothesForm = () => {
+    setNewClothingName('');
+    setNewClothingColor('');
+    setNewClothingMaterial('');
+    setNewClothingOccasions([]);
+    setNewClothingSize('');
+    setNewClothingStyle('');
+    setNewClothingNotes('');
+    setAddClothesStep(0);
+    setIsAddClothesModalVisible(false);
   };
 
   const handleGenerateOutfit = async () => {
@@ -301,33 +383,40 @@ export default function WardrobeAssessment() {
     );
   };
 
-  const CategoryCard = ({ category, index }: { category: any; index: number }) => (
-    <AnimatedCard delay={index * 100} style={styles.categoryCard}>
-      <TouchableOpacity
-        style={[
-          styles.categoryButton,
-          selectedCategory === category.id && styles.selectedCategory,
-        ]}
-        onPress={() => {
-          setSelectedCategory(category.id);
-          setIsAddClothesModalVisible(true);
-        }}
-      >
-        <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
-          <LinearGradient
-            colors={[category.color, `${category.color}80`]}
-            style={styles.categoryGradient}
-          >
-            <Ionicons name={category.icon} size={32} color="white" />
-            <Text style={styles.categoryText}>{category.name}</Text>
-            <View style={styles.addIconContainer}>
-              <Ionicons name="add-circle" size={20} color="white" />
-            </View>
-          </LinearGradient>
-        </BlurView>
-      </TouchableOpacity>
-    </AnimatedCard>
-  );
+  const CategoryCard = ({ category, index }: { category: any; index: number }) => {
+    const itemCount = wardrobeItems.filter(item => item.category === category.id).length;
+    
+    return (
+      <AnimatedCard delay={index * 100} style={styles.categoryCard}>
+        <TouchableOpacity
+          style={[
+            styles.categoryButton,
+            selectedCategory === category.id && styles.selectedCategory,
+          ]}
+          onPress={() => {
+            setSelectedCategory(category.id);
+            setIsAddClothesModalVisible(true);
+          }}
+        >
+          <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
+            <LinearGradient
+              colors={[category.color, `${category.color}80`]}
+              style={styles.categoryGradient}
+            >
+              <Ionicons name={category.icon} size={32} color="white" />
+              <Text style={styles.categoryText}>{category.name}</Text>
+              <Text style={styles.categoryItemCount}>
+                {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              </Text>
+              <View style={styles.addIconContainer}>
+                <Ionicons name="add-circle" size={20} color="white" />
+              </View>
+            </LinearGradient>
+          </BlurView>
+        </TouchableOpacity>
+      </AnimatedCard>
+    );
+  };
 
   const FilterSection = ({ title, options, selectedValue, onSelect, icon }: any) => (
     <View style={styles.filterSection}>
@@ -500,128 +589,277 @@ export default function WardrobeAssessment() {
           animationType="slide"
           transparent={true}
           visible={isAddClothesModalVisible}
-          onRequestClose={() => setIsAddClothesModalVisible(false)}
+          onRequestClose={resetAddClothesForm}
         >
           <View style={styles.modalOverlay}>
             <BlurView intensity={100} tint="dark" style={styles.addClothesModalBlur}>
-              <ScrollView contentContainerStyle={styles.addClothesModalContent}>
+              <View style={styles.addClothesModalContent}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.addClothesModalTitle}>
                     Add {CLOTHING_CATEGORIES.find(cat => cat.id === selectedCategory)?.name}
                   </Text>
                   <TouchableOpacity
                     style={styles.closeButton}
-                    onPress={() => setIsAddClothesModalVisible(false)}
+                    onPress={resetAddClothesForm}
                   >
                     <Ionicons name="close" size={24} color="white" />
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Item Name *</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={newClothingName}
-                    onChangeText={setNewClothingName}
-                    placeholder="e.g., Blue Cotton T-Shirt"
-                    placeholderTextColor="rgba(255,255,255,0.5)"
-                  />
-                </View>
-
-                <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Color *</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorOptions}>
-                    {COLORS.map(color => (
-                      <TouchableOpacity
-                        key={color}
-                        style={[
-                          styles.colorOption,
-                          newClothingColor === color && styles.selectedColorOption
-                        ]}
-                        onPress={() => setNewClothingColor(color)}
-                      >
-                        <Text style={[
-                          styles.colorOptionText,
-                          newClothingColor === color && styles.selectedColorOptionText
-                        ]}>
-                          {color}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Material *</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.materialOptions}>
-                    {MATERIALS.map(material => (
-                      <TouchableOpacity
-                        key={material}
-                        style={[
-                          styles.materialOption,
-                          newClothingMaterial === material && styles.selectedMaterialOption
-                        ]}
-                        onPress={() => setNewClothingMaterial(material)}
-                      >
-                        <Text style={[
-                          styles.materialOptionText,
-                          newClothingMaterial === material && styles.selectedMaterialOptionText
-                        ]}>
-                          {material}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-
-                <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>Suitable Occasions (Optional)</Text>
-                  <View style={styles.occasionGrid}>
-                    {EVENT_TYPES.map(event => (
-                      <TouchableOpacity
-                        key={event.id}
-                        style={[
-                          styles.occasionOption,
-                          newClothingOccasions.includes(event.id) && styles.selectedOccasionOption
-                        ]}
-                        onPress={() => toggleOccasion(event.id)}
-                      >
-                        <Ionicons 
-                          name={event.icon} 
-                          size={16} 
-                          color={newClothingOccasions.includes(event.id) ? 'white' : '#667eea'} 
-                        />
-                        <Text style={[
-                          styles.occasionOptionText,
-                          newClothingOccasions.includes(event.id) && styles.selectedOccasionOptionText
-                        ]}>
-                          {event.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                {/* Progress Indicator */}
+                <View style={styles.stepProgressContainer}>
+                  <View style={styles.stepProgressBar}>
+                    <LinearGradient
+                      colors={['#667eea', '#764ba2']}
+                      style={[styles.stepProgressFill, { width: `${((addClothesStep + 1) / 3) * 100}%` }]}
+                    />
                   </View>
+                  <Text style={styles.stepProgressText}>Step {addClothesStep + 1} of 3</Text>
                 </View>
 
+                <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+                  {/* Step 1: Basic Info */}
+                  {addClothesStep === 0 && (
+                    <View style={styles.stepContainer}>
+                      <Text style={styles.stepTitle}>Basic Information</Text>
+                      <Text style={styles.stepSubtitle}>Tell us about your clothing item</Text>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Item Name *</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          value={newClothingName}
+                          onChangeText={setNewClothingName}
+                          placeholder="e.g., Blue Cotton T-Shirt"
+                          placeholderTextColor="rgba(255,255,255,0.5)"
+                        />
+                      </View>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Color *</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.colorOptions}>
+                          {COLORS.map(color => (
+                            <TouchableOpacity
+                              key={color.name}
+                              style={[
+                                styles.colorOption,
+                                newClothingColor === color.name && styles.selectedColorOption
+                              ]}
+                              onPress={() => setNewClothingColor(color.name)}
+                            >
+                              <View style={[styles.colorCircle, { backgroundColor: color.hex }]} />
+                              <Text style={[
+                                styles.colorOptionText,
+                                newClothingColor === color.name && styles.selectedColorOptionText
+                              ]}>
+                                {color.name}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Step 2: Details */}
+                  {addClothesStep === 1 && (
+                    <View style={styles.stepContainer}>
+                      <Text style={styles.stepTitle}>Material & Details</Text>
+                      <Text style={styles.stepSubtitle}>Add more details about your item</Text>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Material *</Text>
+                        <View style={styles.materialGrid}>
+                          {MATERIALS.map(material => (
+                            <TouchableOpacity
+                              key={material.name}
+                              style={[
+                                styles.materialOption,
+                                newClothingMaterial === material.name && styles.selectedMaterialOption
+                              ]}
+                              onPress={() => setNewClothingMaterial(material.name)}
+                            >
+                              <Ionicons 
+                                name={material.icon} 
+                                size={20} 
+                                color={newClothingMaterial === material.name ? 'white' : '#667eea'} 
+                              />
+                              <Text style={[
+                                styles.materialOptionText,
+                                newClothingMaterial === material.name && styles.selectedMaterialOptionText
+                              ]}>
+                                {material.name}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Size (Optional)</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sizeOptions}>
+                          {SIZES.map(size => (
+                            <TouchableOpacity
+                              key={size}
+                              style={[
+                                styles.sizeOption,
+                                newClothingSize === size && styles.selectedSizeOption
+                              ]}
+                              onPress={() => setNewClothingSize(size)}
+                            >
+                              <Text style={[
+                                styles.sizeOptionText,
+                                newClothingSize === size && styles.selectedSizeOptionText
+                              ]}>
+                                {size}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Style (Optional)</Text>
+                        <View style={styles.styleGrid}>
+                          {STYLES.map(style => (
+                            <TouchableOpacity
+                              key={style.name}
+                              style={[
+                                styles.styleOption,
+                                newClothingStyle === style.name && styles.selectedStyleOption
+                              ]}
+                              onPress={() => setNewClothingStyle(style.name)}
+                            >
+                              <Ionicons 
+                                name={style.icon} 
+                                size={16} 
+                                color={newClothingStyle === style.name ? 'white' : '#667eea'} 
+                              />
+                              <Text style={[
+                                styles.styleOptionText,
+                                newClothingStyle === style.name && styles.selectedStyleOptionText
+                              ]}>
+                                {style.name}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Step 3: Occasions & Notes */}
+                  {addClothesStep === 2 && (
+                    <View style={styles.stepContainer}>
+                      <Text style={styles.stepTitle}>Occasions & Notes</Text>
+                      <Text style={styles.stepSubtitle}>When would you wear this item?</Text>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Suitable Occasions (Optional)</Text>
+                        <View style={styles.occasionGrid}>
+                          {EVENT_TYPES.map(event => (
+                            <TouchableOpacity
+                              key={event.id}
+                              style={[
+                                styles.occasionOption,
+                                newClothingOccasions.includes(event.id) && styles.selectedOccasionOption
+                              ]}
+                              onPress={() => toggleOccasion(event.id)}
+                            >
+                              <Ionicons 
+                                name={event.icon} 
+                                size={16} 
+                                color={newClothingOccasions.includes(event.id) ? 'white' : '#667eea'} 
+                              />
+                              <Text style={[
+                                styles.occasionOptionText,
+                                newClothingOccasions.includes(event.id) && styles.selectedOccasionOptionText
+                              ]}>
+                                {event.name}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      <View style={styles.formSection}>
+                        <Text style={styles.formLabel}>Notes (Optional)</Text>
+                        <TextInput
+                          style={[styles.textInput, styles.textArea]}
+                          value={newClothingNotes}
+                          onChangeText={setNewClothingNotes}
+                          placeholder="Any additional notes about this item..."
+                          placeholderTextColor="rgba(255,255,255,0.5)"
+                          multiline
+                          numberOfLines={3}
+                        />
+                      </View>
+
+                      {/* Summary */}
+                      <View style={styles.summarySection}>
+                        <Text style={styles.summaryTitle}>Summary</Text>
+                        <View style={styles.summaryItem}>
+                          <Text style={styles.summaryLabel}>Name:</Text>
+                          <Text style={styles.summaryValue}>{newClothingName || 'Not set'}</Text>
+                        </View>
+                        <View style={styles.summaryItem}>
+                          <Text style={styles.summaryLabel}>Color:</Text>
+                          <View style={styles.summaryColorRow}>
+                            {newClothingColor && (
+                              <View style={[styles.summaryColorDot, { 
+                                backgroundColor: COLORS.find(c => c.name === newClothingColor)?.hex || '#ccc' 
+                              }]} />
+                            )}
+                            <Text style={styles.summaryValue}>{newClothingColor || 'Not set'}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.summaryItem}>
+                          <Text style={styles.summaryLabel}>Material:</Text>
+                          <Text style={styles.summaryValue}>{newClothingMaterial || 'Not set'}</Text>
+                        </View>
+                        {newClothingSize && (
+                          <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Size:</Text>
+                            <Text style={styles.summaryValue}>{newClothingSize}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </ScrollView>
+
+                {/* Navigation Buttons */}
                 <View style={styles.modalActions}>
+                  {addClothesStep > 0 && (
+                    <TouchableOpacity
+                      style={styles.backButton}
+                      onPress={prevAddClothesStep}
+                    >
+                      <Ionicons name="arrow-back" size={20} color="#667eea" />
+                      <Text style={styles.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+                  )}
+                  
                   <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => setIsAddClothesModalVisible(false)}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={handleAddClothingItem}
+                    style={[styles.nextButton, { flex: addClothesStep === 0 ? 1 : 0.7 }]}
+                    onPress={addClothesStep === 2 ? handleAddClothingItem : nextAddClothesStep}
                   >
                     <LinearGradient
                       colors={['#667eea', '#764ba2']}
-                      style={styles.addButtonGradient}
+                      style={styles.nextButtonGradient}
                     >
-                      <Text style={styles.addButtonText}>Add to Wardrobe</Text>
+                      <Text style={styles.nextButtonText}>
+                        {addClothesStep === 2 ? 'Add to Wardrobe' : 'Next'}
+                      </Text>
+                      <Ionicons 
+                        name={addClothesStep === 2 ? "checkmark" : "arrow-forward"} 
+                        size={20} 
+                        color="white" 
+                      />
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
+              </View>
             </BlurView>
           </View>
         </Modal>
@@ -752,6 +990,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginTop: 8,
+  },
+  categoryItemCount: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10,
+    marginTop: 2,
   },
   addIconContainer: {
     position: 'absolute',
@@ -931,11 +1174,12 @@ const styles = StyleSheet.create({
   // Add Clothes Modal Styles
   addClothesModalBlur: {
     width: '95%',
-    maxHeight: '90%',
+    height: '85%',
     borderRadius: 20,
     overflow: 'hidden',
   },
   addClothesModalContent: {
+    flex: 1,
     padding: 25,
   },
   modalHeader: {
@@ -1079,5 +1323,187 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Multi-step Modal Styles
+  stepProgressContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  stepProgressBar: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  stepProgressFill: {
+    height: '100%',
+  },
+  stepProgressText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    marginTop: 8,
+  },
+  formContainer: {
+    flex: 1,
+    marginBottom: 20,
+  },
+  stepContainer: {
+    paddingBottom: 20,
+  },
+  stepTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+  },
+  stepSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 24,
+  },
+  colorCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginBottom: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  materialGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  sizeOptions: {
+    flexDirection: 'row',
+  },
+  sizeOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 15,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    minWidth: 40,
+    alignItems: 'center',
+  },
+  selectedSizeOption: {
+    backgroundColor: '#f093fb',
+    borderColor: 'white',
+  },
+  sizeOptionText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  selectedSizeOptionText: {
+    color: 'white',
+  },
+  styleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  styleOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  selectedStyleOption: {
+    backgroundColor: '#00f2fe',
+    borderColor: 'white',
+  },
+  styleOptionText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  selectedStyleOptionText: {
+    color: 'white',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  summarySection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 12,
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+  },
+  summaryValue: {
+    fontSize: 14,
+    color: 'white',
+  },
+  summaryColorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  summaryColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  backButton: {
+    flex: 0.3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingVertical: 15,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  backButtonText: {
+    color: '#667eea',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  nextButton: {
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  nextButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+  },
+  nextButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8,
   },
 });
