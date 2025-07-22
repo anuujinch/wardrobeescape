@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-    aiOutfitService,
+    AIOutfitRecommendationService,
     OutfitRecommendation,
     UserPreferences
 } from '../services/AIOutfitRecommendationService';
@@ -16,6 +17,7 @@ export default function OutfitRecommendationsScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedOutfit, setSelectedOutfit] = useState<OutfitRecommendation | null>(null);
   const [wardrobeGaps, setWardrobeGaps] = useState<string[]>([]);
+  const [missingItems, setMissingItems] = useState<any[]>([]);
 
   useEffect(() => {
     generateRecommendations();
@@ -32,22 +34,106 @@ export default function OutfitRecommendationsScreen() {
         mood: params.mood as string || 'Comfortable'
       };
 
+      console.log('Generating outfits with wardrobe:', wardrobeData);
+      console.log('Preferences:', preferences);
+
       // Generate AI recommendations
-      const recs = aiOutfitService.generateOutfitRecommendations(wardrobeData, preferences);
-      setRecommendations(recs);
+      const aiService = new AIOutfitRecommendationService();
+      const recs = aiService.generateOutfitRecommendations(wardrobeData, preferences);
+      
+      // Enhanced outfit creation with missing item suggestions
+      const enhancedRecs = recs.map(rec => {
+        const missingPieces = suggestMissingPieces(rec, wardrobeData, preferences);
+        return {
+          ...rec,
+          missingPieces,
+          completeOutfit: [...rec.items, ...missingPieces]
+        };
+      });
+      
+      setRecommendations(enhancedRecs);
 
       // Analyze wardrobe gaps
-      const gaps = aiOutfitService.analyzeWardrobeGaps(wardrobeData);
+      const gaps = aiService.analyzeWardrobeGaps(wardrobeData);
       setWardrobeGaps(gaps);
 
-      if (recs.length > 0) {
-        setSelectedOutfit(recs[0]);
+      if (enhancedRecs.length > 0) {
+        setSelectedOutfit(enhancedRecs[0]);
       }
     } catch (error) {
       console.error('Error generating recommendations:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const suggestMissingPieces = (outfit: OutfitRecommendation, wardrobe: any[], preferences: UserPreferences) => {
+    const missing = [];
+    const categories = outfit.items.map(item => item.category);
+    
+    // Essential pieces based on event type
+    const essentialPieces = {
+      'Work': ['Tops', 'Bottoms', 'Shoes'],
+      'Formal': ['Tops', 'Bottoms', 'Shoes', 'Outerwear'],
+      'Casual': ['Tops', 'Bottoms'],
+      'Date Night': ['Tops', 'Bottoms', 'Shoes', 'Accessories'],
+      'Party': ['Tops', 'Bottoms', 'Shoes', 'Accessories']
+    };
+
+    const required = essentialPieces[preferences.eventType] || ['Tops', 'Bottoms'];
+    
+    required.forEach(requiredCategory => {
+      if (!categories.includes(requiredCategory)) {
+        // Suggest an item to buy
+        const suggestion = generateSuggestion(requiredCategory, preferences);
+        missing.push({
+          ...suggestion,
+          isSuggestion: true,
+          category: requiredCategory
+        });
+      }
+    });
+
+    return missing;
+  };
+
+  const generateSuggestion = (category: string, preferences: UserPreferences) => {
+    const suggestions = {
+      'Tops': {
+        'Work': { name: 'Professional Blouse', description: 'A crisp white or neutral colored blouse' },
+        'Formal': { name: 'Dress Shirt', description: 'Elegant button-down shirt' },
+        'Casual': { name: 'Comfortable T-Shirt', description: 'Soft cotton tee in your favorite color' },
+        'Date Night': { name: 'Stylish Top', description: 'Flattering blouse or nice sweater' },
+        'Party': { name: 'Statement Top', description: 'Eye-catching blouse or party shirt' }
+      },
+      'Bottoms': {
+        'Work': { name: 'Dress Pants', description: 'Professional trousers or pencil skirt' },
+        'Formal': { name: 'Formal Trousers', description: 'Well-tailored dress pants' },
+        'Casual': { name: 'Comfortable Jeans', description: 'Well-fitting denim or casual pants' },
+        'Date Night': { name: 'Stylish Bottoms', description: 'Flattering jeans or dress pants' },
+        'Party': { name: 'Party Bottoms', description: 'Trendy pants or skirt' }
+      },
+      'Shoes': {
+        'Work': { name: 'Professional Shoes', description: 'Comfortable dress shoes or heels' },
+        'Formal': { name: 'Dress Shoes', description: 'Elegant formal footwear' },
+        'Casual': { name: 'Casual Sneakers', description: 'Comfortable everyday shoes' },
+        'Date Night': { name: 'Nice Shoes', description: 'Stylish shoes that complete the look' },
+        'Party': { name: 'Party Shoes', description: 'Fun, stylish footwear' }
+      },
+      'Accessories': {
+        'default': { name: 'Accessories', description: 'Jewelry, bag, or scarf to complete the look' }
+      },
+      'Outerwear': {
+        'default': { name: 'Jacket', description: 'A blazer or coat for the occasion' }
+      }
+    };
+
+    const categoryItems = suggestions[category];
+    if (categoryItems) {
+      return categoryItems[preferences.eventType] || categoryItems['default'] || categoryItems[Object.keys(categoryItems)[0]];
+    }
+    
+    return { name: `${category} Item`, description: `A nice ${category.toLowerCase()} piece for this occasion` };
   };
 
   const getConfidenceColor = (level: string) => {
@@ -71,191 +157,150 @@ export default function OutfitRecommendationsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>AI is crafting your perfect outfit...</Text>
-        </View>
+        <LinearGradient
+          colors={['#667eea', '#764ba2', '#f093fb']}
+          style={styles.gradient}
+        >
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="white" />
+            <Text style={styles.loadingText}>AI is crafting your perfect outfit...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        style={styles.gradient}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.title}>AI Outfit Recommendations</Text>
-          <TouchableOpacity onPress={generateRecommendations}>
-            <Ionicons name="refresh" size={24} color="#333" />
+          <TouchableOpacity onPress={generateRecommendations} style={styles.refreshButton}>
+            <Ionicons name="refresh" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
-        {/* Event & Mood Info */}
-        <View style={styles.preferencesCard}>
-          <Text style={styles.preferencesTitle}>Your Preferences</Text>
-          <View style={styles.preferencesRow}>
-            <View style={styles.preferenceItem}>
-              <Ionicons name="calendar" size={20} color="#667eea" />
-              <Text style={styles.preferenceText}>{params.eventType}</Text>
-            </View>
-            <View style={styles.preferenceItem}>
-              <Ionicons name="happy" size={20} color="#667eea" />
-              <Text style={styles.preferenceText}>{params.mood}</Text>
-            </View>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Event & Mood Info */}
+          <View style={styles.preferencesCard}>
+            <BlurView intensity={20} tint="light" style={styles.preferencesBlur}>
+              <Text style={styles.preferencesTitle}>Your Preferences</Text>
+              <View style={styles.preferencesRow}>
+                <View style={styles.preferenceItem}>
+                  <Ionicons name="calendar-outline" size={20} color="white" />
+                  <Text style={styles.preferenceText}>{params.eventType}</Text>
+                </View>
+                <View style={styles.preferenceItem}>
+                  <Ionicons name="heart-outline" size={20} color="white" />
+                  <Text style={styles.preferenceText}>{params.mood}</Text>
+                </View>
+              </View>
+            </BlurView>
           </View>
-        </View>
 
-        {/* Recommendations */}
-        {recommendations.length === 0 ? (
-          <View style={styles.noRecommendationsCard}>
-            <Ionicons name="shirt" size={48} color="#ccc" />
-            <Text style={styles.noRecommendationsTitle}>No Outfits Found</Text>
-            <Text style={styles.noRecommendationsText}>
-              Add more items to your wardrobe to get better recommendations
-            </Text>
-          </View>
-        ) : (
-          <>
-            {/* Outfit Selection Tabs */}
-            <View style={styles.tabContainer}>
-              {recommendations.map((rec, index) => (
-                <TouchableOpacity
-                  key={rec.id}
-                  style={[
-                    styles.tab,
-                    selectedOutfit?.id === rec.id && styles.selectedTab
-                  ]}
-                  onPress={() => setSelectedOutfit(rec)}
-                >
-                  <Text style={[
-                    styles.tabText,
-                    selectedOutfit?.id === rec.id && styles.selectedTabText
-                  ]}>
-                    Outfit {index + 1}
-                  </Text>
-                  <View style={[
-                    styles.confidenceBadge,
-                    { backgroundColor: getConfidenceColor(rec.confidenceLevel) }
-                  ]}>
-                    <Ionicons 
-                      name={getConfidenceIcon(rec.confidenceLevel)} 
-                      size={12} 
-                      color="white" 
-                    />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Selected Outfit Details */}
-            {selectedOutfit && (
-              <View style={styles.outfitCard}>
+          {/* Outfit Recommendations */}
+          {recommendations.map((outfit, index) => (
+            <View key={outfit.id} style={styles.outfitCard}>
+              <BlurView intensity={20} tint="light" style={styles.outfitBlur}>
                 <LinearGradient
-                  colors={['#667eea', '#764ba2']}
+                  colors={index === 0 ? ['#f093fb', '#f5576c'] : ['#667eea', '#764ba2']}
                   style={styles.outfitHeader}
                 >
                   <View style={styles.outfitHeaderContent}>
-                    <Text style={styles.outfitTitle}>
-                      {selectedOutfit.id.replace('outfit-', 'Outfit ')}
-                    </Text>
+                    <Text style={styles.outfitTitle}>Outfit {index + 1}</Text>
                     <View style={styles.scoreContainer}>
-                      <Text style={styles.scoreText}>Score: {selectedOutfit.score}</Text>
-                      <View style={[
-                        styles.confidenceBadge,
-                        { backgroundColor: getConfidenceColor(selectedOutfit.confidenceLevel) }
-                      ]}>
-                        <Ionicons 
-                          name={getConfidenceIcon(selectedOutfit.confidenceLevel)} 
-                          size={16} 
-                          color="white" 
-                        />
-                        <Text style={styles.confidenceText}>
-                          {selectedOutfit.confidenceLevel}
-                        </Text>
+                      <Text style={styles.scoreText}>Match: {Math.round(outfit.score)}%</Text>
+                      <View style={[styles.confidenceBadge, { backgroundColor: getConfidenceColor(outfit.confidenceLevel) }]}>
+                        <Ionicons name={getConfidenceIcon(outfit.confidenceLevel)} size={12} color="white" />
+                        <Text style={styles.confidenceText}>{outfit.confidenceLevel}</Text>
                       </View>
                     </View>
                   </View>
                 </LinearGradient>
 
-                {/* Outfit Items */}
+                {/* Your Items */}
                 <View style={styles.outfitItems}>
-                  <Text style={styles.sectionTitle}>Your Outfit</Text>
+                  <Text style={styles.sectionTitle}>From Your Wardrobe</Text>
                   <View style={styles.itemsGrid}>
-                    {selectedOutfit.items.map((item, index) => (
-                      <View key={`${item.id}-${index}`} style={styles.itemCard}>
-                        <View style={styles.itemIcon}>
-                          <Ionicons 
-                            name={getItemIcon(item.category)} 
-                            size={24} 
-                            color="#667eea" 
-                          />
+                    {outfit.items.map((item, itemIndex) => (
+                      <View key={itemIndex} style={styles.itemCard}>
+                        <View style={styles.itemIconContainer}>
+                          <Ionicons name="checkmark-circle" size={16} color="#28a745" />
                         </View>
                         <Text style={styles.itemName}>{item.name}</Text>
                         <Text style={styles.itemCategory}>{item.category}</Text>
                       </View>
                     ))}
                   </View>
+
+                  {/* Missing/Suggested Items */}
+                  {outfit.missingPieces?.length > 0 && (
+                    <>
+                      <Text style={styles.sectionTitle}>Suggested to Complete Look</Text>
+                      <View style={styles.itemsGrid}>
+                        {outfit.missingPieces.map((item, itemIndex) => (
+                          <View key={itemIndex} style={[styles.itemCard, styles.suggestedItem]}>
+                            <View style={styles.itemIconContainer}>
+                              <Ionicons name="add-circle" size={16} color="#f5576c" />
+                            </View>
+                            <Text style={styles.itemName}>{item.name}</Text>
+                            <Text style={styles.itemCategory}>{item.category}</Text>
+                            <Text style={styles.suggestionDescription}>{item.description}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
                 </View>
 
-                {/* AI Reasoning */}
+                {/* Reasoning */}
                 <View style={styles.reasoningSection}>
                   <Text style={styles.sectionTitle}>Why This Works</Text>
-                  <Text style={styles.reasoningText}>{selectedOutfit.reasoning}</Text>
+                  <Text style={styles.reasoningText}>{outfit.reasoning}</Text>
                 </View>
 
                 {/* Style Notes */}
-                <View style={styles.styleNotesSection}>
-                  <Text style={styles.sectionTitle}>Style Notes</Text>
-                  {selectedOutfit.styleNotes.map((note, index) => (
-                    <View key={index} style={styles.styleNote}>
-                      <Ionicons name="bulb" size={16} color="#ffc107" />
-                      <Text style={styles.styleNoteText}>{note}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </>
-        )}
+                {outfit.styleNotes && outfit.styleNotes.length > 0 && (
+                  <View style={styles.styleNotesSection}>
+                    <Text style={styles.sectionTitle}>Style Tips</Text>
+                    {outfit.styleNotes.map((note, noteIndex) => (
+                      <View key={noteIndex} style={styles.styleNote}>
+                        <Ionicons name="bulb-outline" size={16} color="#f5576c" />
+                        <Text style={styles.styleNoteText}>{note}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </BlurView>
+            </View>
+          ))}
 
-        {/* Wardrobe Gaps */}
-        {wardrobeGaps.length > 0 && (
-          <View style={styles.gapsCard}>
-            <Text style={styles.gapsTitle}>Wardrobe Suggestions</Text>
-            <Text style={styles.gapsSubtitle}>
-              Consider adding these items for more outfit options:
-            </Text>
-            {wardrobeGaps.map((gap, index) => (
-              <View key={index} style={styles.gapItem}>
-                <Ionicons name="add-circle" size={16} color="#28a745" />
-                <Text style={styles.gapText}>{gap}</Text>
-              </View>
-            ))}
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => router.back()}>
+              <LinearGradient
+                colors={['#f093fb', '#f5576c']}
+                style={styles.primaryButtonGradient}
+              >
+                <Ionicons name="checkmark" size={20} color="white" />
+                <Text style={styles.primaryButtonText}>Save Favorite Outfits</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.secondaryButton} onPress={generateRecommendations}>
+              <Ionicons name="refresh" size={20} color="white" />
+              <Text style={styles.secondaryButtonText}>Generate New Ideas</Text>
+            </TouchableOpacity>
           </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.primaryButton}
-            onPress={() => router.push('/wardrobe-assessment')}
-          >
-            <Ionicons name="shirt" size={24} color="white" />
-            <Text style={styles.primaryButtonText}>Add More Items</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.secondaryButton}
-            onPress={() => router.push('/')}
-          >
-            <Ionicons name="home" size={24} color="#667eea" />
-            <Text style={styles.secondaryButtonText}>Back to Home</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
@@ -292,22 +337,32 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  gradient: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: 'transparent', // Make header transparent
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(255,255,255,0.2)', // Semi-transparent border
+  },
+  backButton: {
+    padding: 8,
+  },
+  refreshButton: {
+    padding: 8,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
+    textAlign: 'center',
   },
   preferencesCard: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent', // Make card transparent
     margin: 16,
     padding: 16,
     borderRadius: 12,
@@ -317,10 +372,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  preferencesBlur: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)', // Semi-transparent white background
+  },
   preferencesTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
     marginBottom: 12,
   },
   preferencesRow: {
@@ -334,7 +394,7 @@ const styles = StyleSheet.create({
   },
   preferenceText: {
     fontSize: 14,
-    color: '#666',
+    color: 'white',
   },
   noRecommendationsCard: {
     backgroundColor: 'white',
@@ -407,7 +467,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   outfitCard: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent', // Make outfit card transparent
     margin: 16,
     borderRadius: 12,
     overflow: 'hidden',
@@ -416,6 +476,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  outfitBlur: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)', // Semi-transparent white background
   },
   outfitHeader: {
     padding: 20,
@@ -445,7 +510,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
     marginBottom: 12,
   },
   itemsGrid: {
@@ -454,17 +519,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   itemCard: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(255,255,255,0.1)', // Semi-transparent white background
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
     minWidth: 80,
     flex: 1,
   },
-  itemIcon: {
+  itemIconContainer: {
     width: 40,
     height: 40,
-    backgroundColor: '#e9ecef',
+    backgroundColor: 'rgba(255,255,255,0.2)', // Semi-transparent white background
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -473,29 +538,39 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'white',
     textAlign: 'center',
     marginBottom: 4,
   },
   itemCategory: {
     fontSize: 10,
-    color: '#666',
+    color: 'rgba(255,255,255,0.7)', // Semi-transparent white color
     textAlign: 'center',
+  },
+  suggestedItem: {
+    backgroundColor: 'rgba(255,255,255,0.05)', // Semi-transparent white background
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)', // Semi-transparent border
+  },
+  suggestionDescription: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)', // Semi-transparent white color
+    marginTop: 4,
   },
   reasoningSection: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: 'rgba(255,255,255,0.2)', // Semi-transparent border
   },
   reasoningText: {
     fontSize: 14,
-    color: '#666',
+    color: 'white',
     lineHeight: 20,
   },
   styleNotesSection: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: 'rgba(255,255,255,0.2)', // Semi-transparent border
   },
   styleNote: {
     flexDirection: 'row',
@@ -505,7 +580,7 @@ const styles = StyleSheet.create({
   },
   styleNoteText: {
     fontSize: 14,
-    color: '#666',
+    color: 'white',
     flex: 1,
     lineHeight: 20,
   },
@@ -546,7 +621,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   primaryButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: 'transparent', // Make button transparent
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'white', // White border
+  },
+  primaryButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -560,7 +645,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   secondaryButton: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent', // Make button transparent
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -568,10 +653,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#667eea',
+    borderColor: 'white', // White border
   },
   secondaryButtonText: {
-    color: '#667eea',
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
