@@ -211,23 +211,34 @@ export default function WardrobeAssessment() {
   };
 
   const handleAddClothingItem = () => {
+    console.log('Add item button pressed');
+    console.log('Selected category:', selectedCategory);
+    console.log('Item name:', newClothingName);
+    console.log('Item color:', newClothingColor);
+    console.log('Item material:', newClothingMaterial);
+    
     if (!selectedCategory) {
+      console.log('No category selected');
       Alert.alert('No Category Selected', 'Please select a category first!');
       return;
     }
     if (!newClothingName.trim()) {
+      console.log('No name entered');
       Alert.alert('Missing Name', 'Please enter a name for the clothing item!');
       return;
     }
     if (!newClothingColor) {
+      console.log('No color selected');
       Alert.alert('Missing Color', 'Please select a color!');
       return;
     }
     if (!newClothingMaterial) {
+      console.log('No material selected');
       Alert.alert('Missing Material', 'Please select a material!');
       return;
     }
 
+    console.log('Creating new item...');
     const categoryInfo = CLOTHING_CATEGORIES.find(cat => cat.id === selectedCategory);
     const newItem: WardrobeItem = {
       id: Date.now().toString(),
@@ -239,7 +250,13 @@ export default function WardrobeAssessment() {
       icon: categoryInfo?.icon || 'shirt-outline',
     };
 
-    setWardrobeItems(prev => [...prev, newItem]);
+    console.log('New item created:', newItem);
+    setWardrobeItems(prev => {
+      console.log('Previous items:', prev.length);
+      const updated = [...prev, newItem];
+      console.log('Updated items:', updated.length);
+      return updated;
+    });
     
     // Reset form
     setNewClothingName('');
@@ -252,6 +269,7 @@ export default function WardrobeAssessment() {
     setAddClothesStep(0);
     setIsAddClothesModalVisible(false);
     
+    console.log('Item added successfully!');
     Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
   };
 
@@ -394,8 +412,10 @@ export default function WardrobeAssessment() {
             selectedCategory === category.id && styles.selectedCategory,
           ]}
           onPress={() => {
+            console.log('Category pressed:', category.name);
             setSelectedCategory(category.id);
             setIsAddClothesModalVisible(true);
+            console.log('Modal should be visible now');
           }}
         >
           <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
@@ -603,6 +623,7 @@ export default function WardrobeAssessment() {
           visible={isAddClothesModalVisible}
           onRequestClose={resetAddClothesForm}
         >
+          {console.log('Modal rendering, visible:', isAddClothesModalVisible)}
           <View style={styles.modalOverlay}>
             <BlurView intensity={100} tint="dark" style={styles.addClothesModalBlur}>
               <View style={styles.addClothesModalContent}>
