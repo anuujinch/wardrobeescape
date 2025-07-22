@@ -191,7 +191,6 @@ export default function AIOutfitModel({ outfit, eventType, mood }: AIOutfitModel
 
 const styles = StyleSheet.create({
   container: {
-    margin: 16,
     borderRadius: 20,
     overflow: 'hidden',
     elevation: 8,

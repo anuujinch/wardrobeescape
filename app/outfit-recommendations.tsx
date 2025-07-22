@@ -227,11 +227,13 @@ export default function OutfitRecommendationsScreen() {
                  </LinearGradient>
 
                  {/* AI Model Visualization */}
-                 <AIOutfitModel 
-                   outfit={outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]}
-                   eventType={params.eventType as string || 'Casual'}
-                   mood={params.mood as string || 'Comfortable'}
-                 />
+                 <View style={styles.aiModelContainer}>
+                   <AIOutfitModel 
+                     outfit={outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]}
+                     eventType={params.eventType as string || 'Casual'}
+                     mood={params.mood as string || 'Comfortable'}
+                   />
+                 </View>
 
                 {/* Your Items */}
                 <View style={styles.outfitItems}>
@@ -489,6 +491,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.1)', // Semi-transparent white background
+  },
+  aiModelContainer: {
+    marginBottom: 20,
   },
   outfitHeader: {
     padding: 20,

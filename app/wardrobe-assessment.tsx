@@ -532,12 +532,23 @@ export default function WardrobeAssessment() {
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
             <Text style={styles.title}>Build Your Wardrobe</Text>
-            <TouchableOpacity
-              style={styles.helpButton}
-              onPress={() => setIsModalVisible(true)}
-            >
-              <Ionicons name="help-circle-outline" size={24} color="white" />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.manageButton}
+                onPress={() => router.push('/wardrobe-manager')}
+              >
+                <BlurView intensity={20} tint="light" style={styles.manageBlur}>
+                  <Ionicons name="albums" size={16} color="white" />
+                  <Text style={styles.manageText}>Manage</Text>
+                </BlurView>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.helpButton}
+                onPress={() => setIsModalVisible(true)}
+              >
+                <Ionicons name="help-circle-outline" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <ProgressBar />
@@ -1013,6 +1024,27 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  manageButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  manageBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  manageText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
   helpButton: {
     padding: 8,
