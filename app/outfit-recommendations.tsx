@@ -10,6 +10,7 @@ import {
     OutfitRecommendation,
     UserPreferences
 } from '../services/AIOutfitRecommendationService';
+import AIOutfitModel from '../components/AIOutfitModel';
 
 export default function OutfitRecommendationsScreen() {
   const params = useLocalSearchParams();
@@ -205,25 +206,32 @@ export default function OutfitRecommendationsScreen() {
             </BlurView>
           </View>
 
-          {/* Outfit Recommendations */}
-          {recommendations.map((outfit, index) => (
-            <View key={outfit.id} style={styles.outfitCard}>
-              <BlurView intensity={20} tint="light" style={styles.outfitBlur}>
-                <LinearGradient
-                  colors={index === 0 ? ['#f093fb', '#f5576c'] : ['#667eea', '#764ba2']}
-                  style={styles.outfitHeader}
-                >
-                  <View style={styles.outfitHeaderContent}>
-                    <Text style={styles.outfitTitle}>Outfit {index + 1}</Text>
-                    <View style={styles.scoreContainer}>
-                      <Text style={styles.scoreText}>Match: {Math.round(outfit.score)}%</Text>
-                      <View style={[styles.confidenceBadge, { backgroundColor: getConfidenceColor(outfit.confidenceLevel) }]}>
-                        <Ionicons name={getConfidenceIcon(outfit.confidenceLevel)} size={12} color="white" />
-                        <Text style={styles.confidenceText}>{outfit.confidenceLevel}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </LinearGradient>
+                     {/* Outfit Recommendations */}
+           {recommendations.map((outfit, index) => (
+             <View key={outfit.id} style={styles.outfitCard}>
+               <BlurView intensity={20} tint="light" style={styles.outfitBlur}>
+                 <LinearGradient
+                   colors={index === 0 ? ['#f093fb', '#f5576c'] : ['#667eea', '#764ba2']}
+                   style={styles.outfitHeader}
+                 >
+                   <View style={styles.outfitHeaderContent}>
+                     <Text style={styles.outfitTitle}>Outfit {index + 1}</Text>
+                     <View style={styles.scoreContainer}>
+                       <Text style={styles.scoreText}>Match: {Math.round(outfit.score)}%</Text>
+                       <View style={[styles.confidenceBadge, { backgroundColor: getConfidenceColor(outfit.confidenceLevel) }]}>
+                         <Ionicons name={getConfidenceIcon(outfit.confidenceLevel)} size={12} color="white" />
+                         <Text style={styles.confidenceText}>{outfit.confidenceLevel}</Text>
+                       </View>
+                     </View>
+                   </View>
+                 </LinearGradient>
+
+                 {/* AI Model Visualization */}
+                 <AIOutfitModel 
+                   outfit={outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]}
+                   eventType={params.eventType as string || 'Casual'}
+                   mood={params.mood as string || 'Comfortable'}
+                 />
 
                 {/* Your Items */}
                 <View style={styles.outfitItems}>
