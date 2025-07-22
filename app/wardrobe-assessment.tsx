@@ -423,9 +423,11 @@ export default function WardrobeAssessment() {
           ]}
           onPress={() => {
             console.log('Category pressed:', category.name);
+            Alert.alert('Category Pressed', `You pressed ${category.name}. Opening modal...`);
             setSelectedCategory(category.id);
             setIsAddClothesModalVisible(true);
             console.log('Modal should be visible now');
+            console.log('Modal state:', isAddClothesModalVisible);
           }}
         >
           <BlurView intensity={20} tint="light" style={styles.categoryBlur}>
@@ -531,13 +533,44 @@ export default function WardrobeAssessment() {
 
           <ProgressBar />
 
+          {/* Debug Info */}
+          <View style={{ backgroundColor: 'yellow', padding: 10, margin: 10 }}>
+            <Text style={{ color: 'black', fontWeight: 'bold' }}>
+              🐛 DEBUG: Modal Visible = {isAddClothesModalVisible ? 'TRUE' : 'FALSE'}
+            </Text>
+            <Text style={{ color: 'black' }}>
+              Selected Category: {selectedCategory || 'None'}
+            </Text>
+          </View>
+
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Categories Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Add Clothing Items</Text>
+              <Text style={styles.sectionTitle}>Clothing Categories</Text>
               <Text style={styles.sectionDescription}>
-                Tap any category to add clothes to your wardrobe
+                Select a category to add items to your wardrobe
               </Text>
+              
+              {/* Test Button */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: 'red',
+                  padding: 15,
+                  margin: 10,
+                  borderRadius: 10,
+                  alignItems: 'center'
+                }}
+                onPress={() => {
+                  console.log('TEST: Direct modal open');
+                  Alert.alert('Test', 'Button works! Opening modal...');
+                  setIsAddClothesModalVisible(true);
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                  🔴 TEST: Open Modal Directly
+                </Text>
+              </TouchableOpacity>
+              
               <View style={styles.categoriesGrid}>
                 {CLOTHING_CATEGORIES.map((category, index) => (
                   <CategoryCard key={category.id} category={category} index={index} />
