@@ -306,7 +306,14 @@ export default function WardrobeAssessment() {
       setAddClothesStep(0);
       setIsAddClothesModalVisible(false);
       
+      // Force a refresh of the component
+      setRefreshing(true);
+      setTimeout(() => setRefreshing(false), 500);
+      
       Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
+      
+      // Auto-open closet to show the new item
+      setTimeout(() => setIsClosetVisible(true), 1000);
     } catch (error) {
       console.error('Error adding item:', error);
       Alert.alert('Error', 'Failed to add item to wardrobe. Please try again.');
@@ -376,6 +383,41 @@ export default function WardrobeAssessment() {
   const getCategoryColor = (category: string) => {
     const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
     return cat?.color || '#667eea';
+  };
+
+  // Get texture pattern based on material
+  const getMaterialDecal = (material: string) => {
+    const materialMap = {
+      'Cotton': { pattern: '⋯', icon: 'ellipsis-horizontal' },
+      'Denim': { pattern: '╫', icon: 'grid' },
+      'Wool': { pattern: '≋', icon: 'cellular' },
+      'Silk': { pattern: '∼', icon: 'sparkles' },
+      'Leather': { pattern: '▦', icon: 'square' },
+      'Polyester': { pattern: '◊', icon: 'diamond' },
+      'Linen': { pattern: '⧨', icon: 'remove' },
+      'Cashmere': { pattern: '※', icon: 'star' },
+      'Velvet': { pattern: '●', icon: 'radio-button-on' },
+    };
+    return materialMap[material] || { pattern: '◦', icon: 'radio-button-off' };
+  };
+
+  // Get color-specific accent
+  const getColorAccent = (color: string) => {
+    const colorAccents = {
+      'Red': '#ff4757',
+      'Blue': '#3742fa', 
+      'Green': '#2ed573',
+      'Yellow': '#ffa502',
+      'Purple': '#5f27cd',
+      'Pink': '#ff3838',
+      'Orange': '#ff6348',
+      'Brown': '#8b4513',
+      'Black': '#2f3542',
+      'White': '#f1f2f6',
+      'Gray': '#57606f',
+      'Navy': '#2f3542'
+    };
+    return colorAccents[color] || '#667eea';
   };
 
   // Filter closet items based on selected filter
@@ -702,7 +744,8 @@ export default function WardrobeAssessment() {
           {/* Closet Sidebar */}
           {isClosetVisible && (
             <View style={styles.closetSidebar}>
-              <BlurView intensity={30} tint="light" style={styles.closetBlur}>
+              <View style={styles.closetContainer}>
+                <BlurView intensity={30} tint="light" style={styles.closetBlur}>
                 <View style={styles.closetHeader}>
                   <Text style={styles.closetTitle}>Your Closet</Text>
                   <TouchableOpacity onPress={() => setIsClosetVisible(false)}>
@@ -747,27 +790,43 @@ export default function WardrobeAssessment() {
                     <View style={styles.closetItems}>
                       {filteredClosetItems.map((item) => (
                         <View key={item.id} style={styles.closetItem}>
-                          {/* Enhanced Visual Item Card */}
-                          <View style={styles.closetItemVisual}>
-                            <LinearGradient
-                              colors={[getCategoryColor(item.category), getColorHex(item.color || '')]}
-                              style={styles.closetItemIcon}
-                            >
-                              <Ionicons name={getCategoryIcon(item.category)} size={24} color="white" />
-                            </LinearGradient>
-                            
-                            {/* Color indicator */}
-                            <View 
-                              style={[styles.closetColorDot, { backgroundColor: getColorHex(item.color || '') }]} 
-                            />
-                            
-                            {/* Material badge */}
-                            {item.material && (
-                              <View style={styles.closetMaterialBadge}>
-                                <Text style={styles.closetMaterialText}>{item.material}</Text>
-                              </View>
-                            )}
-                          </View>
+                                                     {/* Enhanced Visual Item Card */}
+                           <View style={styles.closetItemVisual}>
+                             <LinearGradient
+                               colors={[getCategoryColor(item.category), getColorAccent(item.color || '')]}
+                               style={styles.closetItemIcon}
+                             >
+                               <Ionicons name={getCategoryIcon(item.category)} size={20} color="white" />
+                               
+                               {/* Material Decal Overlay */}
+                               {item.material && (
+                                 <View style={styles.materialDecalOverlay}>
+                                   <Ionicons 
+                                     name={getMaterialDecal(item.material).icon} 
+                                     size={12} 
+                                     color="rgba(255,255,255,0.6)" 
+                                   />
+                                 </View>
+                               )}
+                             </LinearGradient>
+                             
+                             {/* Color indicator with accent */}
+                             <View style={styles.colorIndicatorContainer}>
+                               <View 
+                                 style={[styles.closetColorDot, { backgroundColor: getColorAccent(item.color || '') }]} 
+                               />
+                               {/* Color name */}
+                               <Text style={styles.colorName}>{item.color}</Text>
+                             </View>
+                             
+                             {/* Material badge with pattern */}
+                             {item.material && (
+                               <View style={[styles.closetMaterialBadge, { backgroundColor: getColorAccent(item.color || '') + '40' }]}>
+                                 <Text style={styles.materialPattern}>{getMaterialDecal(item.material).pattern}</Text>
+                                 <Text style={styles.closetMaterialText}>{item.material}</Text>
+                               </View>
+                             )}
+                           </View>
 
                           <View style={styles.closetItemInfo}>
                             <Text style={styles.closetItemName} numberOfLines={1}>{item.name}</Text>
@@ -837,7 +896,8 @@ export default function WardrobeAssessment() {
                     {wardrobeItems.length} {wardrobeItems.length === 1 ? 'item' : 'items'}
                   </Text>
                 </View>
-              </BlurView>
+                </BlurView>
+              </View>
             </View>
           )}
 
@@ -880,11 +940,26 @@ export default function WardrobeAssessment() {
                         style={styles.wardrobeItemContainer}
                         onPress={() => setIsClosetVisible(true)}
                       >
-                        <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
-                          <View style={styles.itemHeader}>
-                            <Ionicons name={getCategoryIcon(item.category)} size={28} color="#667eea" />
-                            <View style={[styles.colorDot, { backgroundColor: getColorHex(item.color || '') }]} />
-                          </View>
+                                                 <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
+                           <View style={styles.itemHeader}>
+                             <LinearGradient
+                               colors={[getCategoryColor(item.category), getColorAccent(item.color || '')]}
+                               style={styles.wardrobeItemIconContainer}
+                             >
+                               <Ionicons name={getCategoryIcon(item.category)} size={24} color="white" />
+                               
+                               {/* Material Decal */}
+                               {item.material && (
+                                 <View style={styles.wardrobeDecalOverlay}>
+                                   <Text style={styles.wardrobeDecalPattern}>
+                                     {getMaterialDecal(item.material).pattern}
+                                   </Text>
+                                 </View>
+                               )}
+                             </LinearGradient>
+                             
+                             <View style={[styles.colorDot, { backgroundColor: getColorAccent(item.color || '') }]} />
+                           </View>
                           <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
                           <Text style={styles.wardrobeItemDetails}>
                             {item.color} • {item.material}
@@ -1580,6 +1655,29 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
   },
+  wardrobeItemIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  wardrobeDecalOverlay: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 6,
+    padding: 2,
+    minWidth: 12,
+    alignItems: 'center',
+  },
+  wardrobeDecalPattern: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#333',
+  },
   colorDot: {
     width: 12,
     height: 12,
@@ -2065,21 +2163,25 @@ const styles = StyleSheet.create({
   // Closet Sidebar Styles
   closetSidebar: {
     position: 'absolute',
-    right: 10,
-    top: 10,
-    bottom: 10,
-    width: 320,
-    zIndex: 1000,
-    borderRadius: 20,
-    overflow: 'hidden',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 340,
+    zIndex: 9999,
     backgroundColor: 'transparent',
-    elevation: 10,
+    elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  closetHeader: {
+    shadowOffset: { width: -5, height: 0 },
+          shadowOpacity: 0.5,
+      shadowRadius: 15,
+    },
+    closetContainer: {
+      flex: 1,
+      margin: 10,
+      borderRadius: 20,
+      overflow: 'hidden',
+    },
+    closetHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -2208,6 +2310,30 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 8,
     fontWeight: 'bold',
+  },
+  materialDecalOverlay: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 8,
+    padding: 2,
+  },
+  colorIndicatorContainer: {
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  colorName: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  materialPattern: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginRight: 4,
   },
   closetItemDetails: {
     marginTop: 4,
