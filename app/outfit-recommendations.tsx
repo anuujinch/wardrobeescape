@@ -233,6 +233,12 @@ export default function OutfitRecommendationsScreen() {
                      eventType={params.eventType as string || 'Casual'}
                      mood={params.mood as string || 'Comfortable'}
                    />
+                   {/* Debug info for avatar */}
+                   <View style={styles.debugAvatarInfo}>
+                     <Text style={styles.debugText}>
+                       Avatar: {(outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]).length} items
+                     </Text>
+                   </View>
                  </View>
 
                 {/* Your Items */}
@@ -494,6 +500,18 @@ const styles = StyleSheet.create({
   },
   aiModelContainer: {
     marginBottom: 20,
+  },
+  debugAvatarInfo: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  debugText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   outfitHeader: {
     padding: 20,

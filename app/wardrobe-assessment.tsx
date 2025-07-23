@@ -537,7 +537,17 @@ export default function WardrobeAssessment() {
       const clothingItems = wardrobeItems.map(item => ({
         id: item.id,
         name: item.name,
-        category: item.category
+        category: item.category,
+        color: item.color,
+        material: item.material,
+        occasions: item.occasions || item.occasion || [],
+        size: item.size,
+        style: item.style,
+        // Add visual properties for avatar generation
+        colorAccent: getColorAccent(item.color || ''),
+        materialDecal: getMaterialDecal(item.material || ''),
+        categoryIcon: getCategoryIcon(item.category),
+        categoryColor: getCategoryColor(item.category)
       }));
       
       const preferences = {
@@ -552,11 +562,17 @@ export default function WardrobeAssessment() {
       
       console.log('Generated recommendations:', recommendations);
 
+      console.log('Navigating to outfit recommendations with data:', {
+        wardrobe: clothingItems,
+        eventType: filters.eventType,
+        mood: filters.mood,
+        recommendationsCount: recommendations.length
+      });
+
       router.push({
         pathname: '/outfit-recommendations',
         params: {
           wardrobe: JSON.stringify(clothingItems),
-          recommendations: JSON.stringify(recommendations),
           eventType: filters.eventType,
           mood: filters.mood,
         },
@@ -2381,29 +2397,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   
-  // Debug Styles (remove later)
-  debugContainer: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    margin: 16,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  debugText: {
-    color: 'white',
-    fontSize: 12,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  debugButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  debugButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+
 });
