@@ -127,6 +127,7 @@ export default function WardrobeAssessment() {
   const [slideAnim] = useState(new Animated.Value(50));
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAddClothesModalVisible, setIsAddClothesModalVisible] = useState(false);
+  const [isClosetVisible, setIsClosetVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
@@ -210,7 +211,7 @@ export default function WardrobeAssessment() {
     setWardrobeItems(sampleItems);
   };
 
-  const handleAddClothingItem = () => {
+  const handleAddClothingItem = async () => {
     console.log('Add item button pressed');
     console.log('Selected category:', selectedCategory);
     console.log('Item name:', newClothingName);
@@ -238,36 +239,43 @@ export default function WardrobeAssessment() {
       return;
     }
 
-    console.log('Creating new item...');
-    const categoryInfo = CLOTHING_CATEGORIES.find(cat => cat.id === selectedCategory);
-    const newItem: WardrobeItem = {
-      id: Date.now().toString(),
-      name: newClothingName.trim(),
-      category: selectedCategory,
-      color: newClothingColor,
-      material: newClothingMaterial,
-      occasion: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
-      icon: categoryInfo?.icon || 'shirt-outline',
-    };
+    try {
+      console.log('Creating new item...');
+      const newItem: Partial<WardrobeItem> = {
+        name: newClothingName.trim(),
+        category: selectedCategory,
+        color: newClothingColor,
+        material: newClothingMaterial,
+        occasions: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
+        size: newClothingSize || undefined,
+        style: newClothingStyle || undefined,
+        notes: newClothingNotes || undefined,
+      };
 
-    console.log('New item created:', newItem);
-    setWardrobeItems(prev => {
-      console.log('Previous items:', prev.length);
-      const updated = [...prev, newItem];
-      console.log('Updated items:', updated.length);
-      return updated;
-    });
-    
-    // Reset form
-    setNewClothingName('');
-    setNewClothingColor('');
-    setNewClothingMaterial('');
-    setNewClothingOccasions([]);
-    setNewClothingSize('');
-    setNewClothingStyle('');
-    setNewClothingNotes('');
-    setAddClothesStep(0);
-    setIsAddClothesModalVisible(false);
+      console.log('New item data:', newItem);
+      
+      const addedItem = await wardrobeService.addWardrobeItem(newItem);
+      console.log('Item added to backend:', addedItem);
+      
+      // Refresh the wardrobe items
+      await loadWardrobeItems();
+      
+      // Reset form
+      setNewClothingName('');
+      setNewClothingColor('');
+      setNewClothingMaterial('');
+      setNewClothingOccasions([]);
+      setNewClothingSize('');
+      setNewClothingStyle('');
+      setNewClothingNotes('');
+      setAddClothesStep(0);
+      setIsAddClothesModalVisible(false);
+      
+      Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      Alert.alert('Error', 'Failed to add item to wardrobe. Please try again.');
+    }
     
     console.log('Item added successfully!');
     Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
@@ -301,6 +309,17 @@ export default function WardrobeAssessment() {
         ? prev.filter(id => id !== occasionId)
         : [...prev, occasionId]
     );
+  };
+
+  // Helper functions for closet
+  const getColorHex = (colorName: string) => {
+    const color = COLORS.find(c => c.name.toLowerCase() === colorName.toLowerCase());
+    return color?.hex || '#667eea';
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
+    return cat?.icon || 'shirt-outline';
   };
 
   const nextAddClothesStep = () => {
@@ -534,6 +553,15 @@ export default function WardrobeAssessment() {
             <Text style={styles.title}>Build Your Wardrobe</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity
+                style={styles.closetButton}
+                onPress={() => setIsClosetVisible(!isClosetVisible)}
+              >
+                <BlurView intensity={20} tint="light" style={styles.closetBlur}>
+                  <Ionicons name="archive" size={16} color="white" />
+                  <Text style={styles.closetText}>Closet</Text>
+                </BlurView>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.manageButton}
                 onPress={() => router.push('/wardrobe-manager')}
               >
@@ -553,7 +581,55 @@ export default function WardrobeAssessment() {
 
           <ProgressBar />
 
-
+          {/* Closet Sidebar */}
+          {isClosetVisible && (
+            <View style={styles.closetSidebar}>
+              <BlurView intensity={30} tint="light" style={styles.closetBlur}>
+                <View style={styles.closetHeader}>
+                  <Text style={styles.closetTitle}>Your Closet</Text>
+                  <TouchableOpacity onPress={() => setIsClosetVisible(false)}>
+                    <Ionicons name="close" size={20} color="white" />
+                  </TouchableOpacity>
+                </View>
+                
+                <ScrollView style={styles.closetContent}>
+                  {wardrobeItems.length === 0 ? (
+                    <View style={styles.emptyCloset}>
+                      <Ionicons name="shirt-outline" size={40} color="rgba(255,255,255,0.6)" />
+                      <Text style={styles.emptyClosetText}>No items yet</Text>
+                      <Text style={styles.emptyClosetSubtext}>Add some clothes to see them here</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.closetItems}>
+                      {wardrobeItems.map((item) => (
+                        <View key={item.id} style={styles.closetItem}>
+                          <View style={[styles.closetItemIcon, { backgroundColor: getColorHex(item.color || '') }]}>
+                            <Ionicons name={getCategoryIcon(item.category)} size={16} color="white" />
+                          </View>
+                          <View style={styles.closetItemInfo}>
+                            <Text style={styles.closetItemName} numberOfLines={1}>{item.name}</Text>
+                            <Text style={styles.closetItemCategory}>{item.category}</Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.closetItemAction}
+                            onPress={() => handleRemoveItem(item.id)}
+                          >
+                            <Ionicons name="trash-outline" size={14} color="#f5576c" />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </ScrollView>
+                
+                <View style={styles.closetFooter}>
+                  <Text style={styles.closetStats}>
+                    {wardrobeItems.length} {wardrobeItems.length === 1 ? 'item' : 'items'}
+                  </Text>
+                </View>
+              </BlurView>
+            </View>
+          )}
 
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Categories Section */}
@@ -1029,6 +1105,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  closetButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  closetBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 4,
+  },
+  closetText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
   manageButton: {
     borderRadius: 20,
@@ -1660,5 +1752,98 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginRight: 8,
+  },
+  
+  // Closet Sidebar Styles
+  closetSidebar: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 300,
+    zIndex: 1000,
+    borderRadius: 20,
+    margin: 10,
+    overflow: 'hidden',
+  },
+  closetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.2)',
+  },
+  closetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  closetContent: {
+    flex: 1,
+    padding: 16,
+  },
+  emptyCloset: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyClosetText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptyClosetSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  closetItems: {
+    gap: 12,
+  },
+  closetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  closetItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closetItemInfo: {
+    flex: 1,
+  },
+  closetItemName: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  closetItemCategory: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+  closetItemAction: {
+    padding: 8,
+  },
+  closetFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+  },
+  closetStats: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
