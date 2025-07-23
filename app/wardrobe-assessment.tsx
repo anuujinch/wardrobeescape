@@ -383,6 +383,61 @@ export default function WardrobeAssessment() {
     ? wardrobeItems.filter(item => item.category === closetFilter)
     : wardrobeItems;
 
+  // Generate shopping suggestions based on missing items
+  const getSuggestedItems = () => {
+    const suggestions = [
+      {
+        id: 'sug-1',
+        name: 'Classic White T-Shirt',
+        category: 'Tops',
+        color: 'White',
+        material: 'Cotton',
+        price: '25',
+        icon: 'shirt-outline'
+      },
+      {
+        id: 'sug-2', 
+        name: 'Dark Wash Jeans',
+        category: 'Bottoms',
+        color: 'Blue',
+        material: 'Denim',
+        price: '80',
+        icon: 'pants'
+      },
+      {
+        id: 'sug-3',
+        name: 'White Sneakers',
+        category: 'Shoes',
+        color: 'White',
+        material: 'Leather',
+        price: '120',
+        icon: 'footsteps'
+      },
+      {
+        id: 'sug-4',
+        name: 'Black Blazer',
+        category: 'Outerwear',
+        color: 'Black',
+        material: 'Wool',
+        price: '150',
+        icon: 'jacket'
+      },
+      {
+        id: 'sug-5',
+        name: 'Silver Watch',
+        category: 'Accessories',
+        color: 'Silver',
+        material: 'Metal',
+        price: '200',
+        icon: 'watch'
+      }
+    ];
+
+    // Filter out suggestions for categories user already has items in
+    const ownedCategories = wardrobeItems.map(item => item.category);
+    return suggestions.filter(sug => !ownedCategories.includes(sug.category) || Math.random() > 0.5);
+  };
+
   const nextAddClothesStep = () => {
 
     
@@ -808,53 +863,104 @@ export default function WardrobeAssessment() {
               </View>
             </View>
 
-            {/* Wardrobe Items */}
+            {/* Current Wardrobe Items */}
+            {wardrobeItems.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.wardrobeHeader}>
+                  <Text style={styles.sectionTitle}>Your Wardrobe</Text>
+                  <Text style={styles.itemCount}>{wardrobeItems.length} items</Text>
+                </View>
+                <Text style={styles.sectionDescription}>
+                  Tap the closet button to manage your items
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
+                  {wardrobeItems.slice(0, 10).map((item, index) => (
+                    <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
+                      <TouchableOpacity
+                        style={styles.wardrobeItemContainer}
+                        onPress={() => setIsClosetVisible(true)}
+                      >
+                        <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
+                          <View style={styles.itemHeader}>
+                            <Ionicons name={getCategoryIcon(item.category)} size={28} color="#667eea" />
+                            <View style={[styles.colorDot, { backgroundColor: getColorHex(item.color || '') }]} />
+                          </View>
+                          <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
+                          <Text style={styles.wardrobeItemDetails}>
+                            {item.color} • {item.material}
+                          </Text>
+                          <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
+                          <View style={styles.occasionTags}>
+                            {(item.occasions || item.occasion || []).slice(0, 2).map((occ, idx) => (
+                              <View key={idx} style={styles.occasionTag}>
+                                <Text style={styles.occasionTagText}>{occ}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        </BlurView>
+                      </TouchableOpacity>
+                    </AnimatedCard>
+                  ))}
+                  {wardrobeItems.length > 10 && (
+                    <TouchableOpacity 
+                      style={styles.viewMoreCard}
+                      onPress={() => setIsClosetVisible(true)}
+                    >
+                      <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
+                        <View style={styles.viewMoreContent}>
+                          <Ionicons name="add-circle-outline" size={40} color="white" />
+                          <Text style={styles.viewMoreText}>+{wardrobeItems.length - 10} more</Text>
+                          <Text style={styles.viewMoreSubtext}>Open closet</Text>
+                        </View>
+                      </BlurView>
+                    </TouchableOpacity>
+                  )}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Shopping Suggestions */}
             <View style={styles.section}>
               <View style={styles.wardrobeHeader}>
-                <Text style={styles.sectionTitle}>Your Wardrobe</Text>
-                <Text style={styles.itemCount}>{wardrobeItems.length} items</Text>
+                <Text style={styles.sectionTitle}>Shopping Suggestions</Text>
+                <Text style={styles.itemCount}>Recommended for you</Text>
               </View>
               <Text style={styles.sectionDescription}>
-                Long press any item to remove it
+                Items you might want to add to your wardrobe
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
-                {wardrobeItems.map((item, index) => (
-                  <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
+                {getSuggestedItems().map((suggestion, index) => (
+                  <AnimatedCard key={suggestion.id} delay={index * 100} style={styles.wardrobeItem}>
                     <TouchableOpacity
                       style={styles.wardrobeItemContainer}
-                      onLongPress={() => {
-                        console.log('Long press triggered on item:', item.name);
-                        handleRemoveItem(item.id);
+                      onPress={() => {
+                        console.log('Suggestion tapped:', suggestion.name);
+                        setSelectedCategory(suggestion.category);
+                        setNewClothingName(suggestion.name);
+                        setNewClothingColor(suggestion.color);
+                        setNewClothingMaterial(suggestion.material);
+                        setIsAddClothesModalVisible(true);
                       }}
                     >
                       <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
                         <View style={styles.itemHeader}>
-                          <Ionicons name={item.icon} size={28} color="#667eea" />
-                          <View style={[styles.colorDot, { backgroundColor: COLORS.find(c => c.name === item.color)?.hex || '#ccc' }]} />
+                          <Ionicons name={suggestion.icon} size={28} color="#f5576c" />
+                          <View style={styles.suggestionBadge}>
+                            <Ionicons name="add-circle" size={16} color="white" />
+                          </View>
                         </View>
-                        <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
+                        <Text style={styles.wardrobeItemName} numberOfLines={2}>{suggestion.name}</Text>
                         <Text style={styles.wardrobeItemDetails}>
-                          {item.color} • {item.material}
+                          {suggestion.color} • {suggestion.material}
                         </Text>
-                        <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
-                        <View style={styles.occasionTags}>
-                          {item.occasion.slice(0, 2).map((occ, idx) => (
-                            <View key={idx} style={styles.occasionTag}>
-                              <Text style={styles.occasionTagText}>{occ}</Text>
-                            </View>
-                          ))}
+                        <Text style={styles.wardrobeItemCategory}>{suggestion.category}</Text>
+                        <View style={styles.suggestionPrice}>
+                          <Text style={styles.priceText}>${suggestion.price}</Text>
                         </View>
                       </BlurView>
                     </TouchableOpacity>
                   </AnimatedCard>
                 ))}
-                {wardrobeItems.length === 0 && (
-                  <View style={styles.emptyWardrobe}>
-                    <Ionicons name="shirt-outline" size={48} color="rgba(255,255,255,0.5)" />
-                    <Text style={styles.emptyWardrobeText}>No items yet</Text>
-                    <Text style={styles.emptyWardrobeSubtext}>Tap a category above to add clothes</Text>
-                  </View>
-                )}
               </ScrollView>
             </View>
 
@@ -1481,6 +1587,48 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
+  suggestionBadge: {
+    backgroundColor: '#f5576c',
+    borderRadius: 8,
+    padding: 2,
+  },
+  suggestionPrice: {
+    backgroundColor: 'rgba(245, 87, 108, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  priceText: {
+    color: '#f5576c',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  viewMoreCard: {
+    width: 120,
+    height: 160,
+    marginRight: 12,
+  },
+  viewMoreContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  viewMoreText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  viewMoreSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
   occasionTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1917,14 +2065,19 @@ const styles = StyleSheet.create({
   // Closet Sidebar Styles
   closetSidebar: {
     position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 350,
+    right: 10,
+    top: 10,
+    bottom: 10,
+    width: 320,
     zIndex: 1000,
     borderRadius: 20,
-    margin: 10,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   closetHeader: {
     flexDirection: 'row',
