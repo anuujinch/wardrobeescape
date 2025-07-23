@@ -141,10 +141,23 @@ export default function WardrobeAssessment() {
     try {
       const items = await wardrobeService.getWardrobeItems();
       setWardrobeItems(items);
+      console.log('Successfully loaded items from backend:', items.length);
     } catch (error) {
       console.error('Error loading wardrobe items:', error);
-      // Fall back to sample data if backend fails
+      console.log('Falling back to local storage');
+      // Fall back to local storage or sample data if backend fails
+      loadFromLocalStorage();
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    try {
+      // For now, fall back to sample data - in the future we can implement AsyncStorage
+      console.log('Loading sample data as fallback');
       initializeWardrobe();
+    } catch (error) {
+      console.error('Error loading from local storage:', error);
+      setWardrobeItems([]);
     }
   };
 
@@ -250,7 +263,8 @@ export default function WardrobeAssessment() {
 
     try {
       console.log('Creating new item...');
-      const newItem: Partial<WardrobeItem> = {
+      const newItem: WardrobeItem = {
+        id: Date.now().toString(),
         name: newClothingName.trim(),
         category: selectedCategory,
         color: newClothingColor,
@@ -259,15 +273,26 @@ export default function WardrobeAssessment() {
         size: newClothingSize || undefined,
         style: newClothingStyle || undefined,
         notes: newClothingNotes || undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       console.log('New item data:', newItem);
       
-      const addedItem = await wardrobeService.addWardrobeItem(newItem);
-      console.log('Item added to backend:', addedItem);
-      
-      // Refresh the wardrobe items
-      await loadWardrobeItems();
+      try {
+        // Try to add to backend first
+        const addedItem = await wardrobeService.addWardrobeItem(newItem);
+        console.log('Item added to backend:', addedItem);
+        
+        // Refresh the wardrobe items from backend
+        await loadWardrobeItems();
+      } catch (backendError) {
+        console.log('Backend failed, adding to local state:', backendError);
+        
+        // Add to local state as fallback
+        setWardrobeItems(prev => [...prev, newItem]);
+        console.log('Item added to local state');
+      }
       
       // Reset form
       setNewClothingName('');
@@ -303,8 +328,20 @@ export default function WardrobeAssessment() {
           onPress: async () => {
             try {
               console.log('Removing item:', itemId);
-              await wardrobeService.deleteWardrobeItem(itemId);
-              await loadWardrobeItems();
+              
+              try {
+                // Try to remove from backend first
+                await wardrobeService.deleteWardrobeItem(itemId);
+                await loadWardrobeItems();
+                console.log('Item removed from backend');
+              } catch (backendError) {
+                console.log('Backend failed, removing from local state:', backendError);
+                
+                // Remove from local state as fallback
+                setWardrobeItems(prev => prev.filter(item => item.id !== itemId));
+                console.log('Item removed from local state');
+              }
+              
               Alert.alert('Success', 'Item removed from wardrobe!');
             } catch (error) {
               console.error('Error removing item:', error);
@@ -593,6 +630,29 @@ export default function WardrobeAssessment() {
           </View>
 
           <ProgressBar />
+
+          {/* Debug Info */}
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>
+              Debug: {wardrobeItems.length} items | Selected: {selectedCategory || 'None'}
+            </Text>
+            <TouchableOpacity
+              style={styles.debugButton}
+              onPress={() => {
+                console.log('Debug - Current state:');
+                console.log('- wardrobeItems:', wardrobeItems.length);
+                console.log('- selectedCategory:', selectedCategory);
+                console.log('- newClothingName:', newClothingName);
+                console.log('- newClothingColor:', newClothingColor);
+                console.log('- newClothingMaterial:', newClothingMaterial);
+                console.log('- addClothesStep:', addClothesStep);
+                console.log('- isAddClothesModalVisible:', isAddClothesModalVisible);
+                Alert.alert('Debug Info', `Items: ${wardrobeItems.length}\nCategory: ${selectedCategory || 'None'}\nStep: ${addClothesStep}`);
+              }}
+            >
+              <Text style={styles.debugButtonText}>Debug Info</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Closet Sidebar */}
           {isClosetVisible && (
@@ -1863,5 +1923,31 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 14,
     fontWeight: '500',
+  },
+  
+  // Debug Styles (remove later)
+  debugContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    margin: 16,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  debugText: {
+    color: 'white',
+    fontSize: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  debugButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  debugButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
