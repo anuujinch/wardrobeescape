@@ -21,8 +21,6 @@ import { AIOutfitRecommendationService } from '../services/AIOutfitRecommendatio
 import { wardrobeService, WardrobeItem } from '../services/WardrobeService';
 
 const { width, height } = Dimensions.get('window');
-  image?: string;
-}
 
 interface Filters {
   eventType: string;
