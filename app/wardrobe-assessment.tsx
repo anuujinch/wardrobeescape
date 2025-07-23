@@ -120,6 +120,7 @@ export default function WardrobeAssessment() {
   const [isAddClothesModalVisible, setIsAddClothesModalVisible] = useState(false);
   const [isClosetVisible, setIsClosetVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [closetFilter, setClosetFilter] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
@@ -371,6 +372,16 @@ export default function WardrobeAssessment() {
     const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
     return cat?.icon || 'shirt-outline';
   };
+
+  const getCategoryColor = (category: string) => {
+    const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
+    return cat?.color || '#667eea';
+  };
+
+  // Filter closet items based on selected filter
+  const filteredClosetItems = closetFilter 
+    ? wardrobeItems.filter(item => item.category === closetFilter)
+    : wardrobeItems;
 
   const nextAddClothesStep = () => {
 
@@ -631,28 +642,7 @@ export default function WardrobeAssessment() {
 
           <ProgressBar />
 
-          {/* Debug Info */}
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>
-              Debug: {wardrobeItems.length} items | Selected: {selectedCategory || 'None'}
-            </Text>
-            <TouchableOpacity
-              style={styles.debugButton}
-              onPress={() => {
-                console.log('Debug - Current state:');
-                console.log('- wardrobeItems:', wardrobeItems.length);
-                console.log('- selectedCategory:', selectedCategory);
-                console.log('- newClothingName:', newClothingName);
-                console.log('- newClothingColor:', newClothingColor);
-                console.log('- newClothingMaterial:', newClothingMaterial);
-                console.log('- addClothesStep:', addClothesStep);
-                console.log('- isAddClothesModalVisible:', isAddClothesModalVisible);
-                Alert.alert('Debug Info', `Items: ${wardrobeItems.length}\nCategory: ${selectedCategory || 'None'}\nStep: ${addClothesStep}`);
-              }}
-            >
-              <Text style={styles.debugButtonText}>Debug Info</Text>
-            </TouchableOpacity>
-          </View>
+
 
           {/* Closet Sidebar */}
           {isClosetVisible && (
@@ -665,30 +655,122 @@ export default function WardrobeAssessment() {
                   </TouchableOpacity>
                 </View>
                 
-                <ScrollView style={styles.closetContent}>
-                  {wardrobeItems.length === 0 ? (
+                {/* Category Filter for Closet */}
+                <View style={styles.closetFilterContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <TouchableOpacity
+                      style={[styles.closetFilterBtn, !closetFilter && styles.activeClosetFilter]}
+                      onPress={() => setClosetFilter('')}
+                    >
+                      <Text style={styles.closetFilterText}>All</Text>
+                    </TouchableOpacity>
+                    {CLOTHING_CATEGORIES.map((category) => (
+                      <TouchableOpacity
+                        key={category.id}
+                        style={[styles.closetFilterBtn, closetFilter === category.id && styles.activeClosetFilter]}
+                        onPress={() => setClosetFilter(category.id)}
+                      >
+                        <Ionicons name={category.icon} size={14} color="white" />
+                        <Text style={styles.closetFilterText}>{category.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <ScrollView style={styles.closetContent} showsVerticalScrollIndicator={false}>
+                  {filteredClosetItems.length === 0 ? (
                     <View style={styles.emptyCloset}>
-                      <Ionicons name="shirt-outline" size={40} color="rgba(255,255,255,0.6)" />
-                      <Text style={styles.emptyClosetText}>No items yet</Text>
-                      <Text style={styles.emptyClosetSubtext}>Add some clothes to see them here</Text>
+                      <Ionicons name="shirt-outline" size={48} color="rgba(255,255,255,0.6)" />
+                      <Text style={styles.emptyClosetText}>
+                        {closetFilter ? `No ${closetFilter} items` : 'No items yet'}
+                      </Text>
+                      <Text style={styles.emptyClosetSubtext}>
+                        {closetFilter ? 'Try selecting a different category' : 'Add some clothes to see them here'}
+                      </Text>
                     </View>
                   ) : (
                     <View style={styles.closetItems}>
-                      {wardrobeItems.map((item) => (
+                      {filteredClosetItems.map((item) => (
                         <View key={item.id} style={styles.closetItem}>
-                          <View style={[styles.closetItemIcon, { backgroundColor: getColorHex(item.color || '') }]}>
-                            <Ionicons name={getCategoryIcon(item.category)} size={16} color="white" />
+                          {/* Enhanced Visual Item Card */}
+                          <View style={styles.closetItemVisual}>
+                            <LinearGradient
+                              colors={[getCategoryColor(item.category), getColorHex(item.color || '')]}
+                              style={styles.closetItemIcon}
+                            >
+                              <Ionicons name={getCategoryIcon(item.category)} size={24} color="white" />
+                            </LinearGradient>
+                            
+                            {/* Color indicator */}
+                            <View 
+                              style={[styles.closetColorDot, { backgroundColor: getColorHex(item.color || '') }]} 
+                            />
+                            
+                            {/* Material badge */}
+                            {item.material && (
+                              <View style={styles.closetMaterialBadge}>
+                                <Text style={styles.closetMaterialText}>{item.material}</Text>
+                              </View>
+                            )}
                           </View>
+
                           <View style={styles.closetItemInfo}>
                             <Text style={styles.closetItemName} numberOfLines={1}>{item.name}</Text>
                             <Text style={styles.closetItemCategory}>{item.category}</Text>
+                            
+                            {/* Size and additional info */}
+                            <View style={styles.closetItemDetails}>
+                              {item.size && (
+                                <View style={styles.closetDetailBadge}>
+                                  <Text style={styles.closetDetailText}>Size: {item.size}</Text>
+                                </View>
+                              )}
+                              {(item.occasions || item.occasion) && (
+                                <View style={styles.closetOccasions}>
+                                  {(item.occasions || item.occasion || []).slice(0, 2).map((occ, idx) => (
+                                    <View key={idx} style={styles.closetOccasionTag}>
+                                      <Text style={styles.closetOccasionText}>{occ}</Text>
+                                    </View>
+                                  ))}
+                                </View>
+                              )}
+                            </View>
                           </View>
-                          <TouchableOpacity
-                            style={styles.closetItemAction}
-                            onPress={() => handleRemoveItem(item.id)}
-                          >
-                            <Ionicons name="trash-outline" size={14} color="#f5576c" />
-                          </TouchableOpacity>
+
+                          {/* Action buttons */}
+                          <View style={styles.closetItemActions}>
+                            <TouchableOpacity
+                              style={styles.closetEditAction}
+                              onPress={() => {
+                                // Quick edit functionality
+                                Alert.alert(
+                                  'Quick Actions',
+                                  `What would you like to do with "${item.name}"?`,
+                                  [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { 
+                                      text: 'Edit Details', 
+                                      onPress: () => router.push('/wardrobe-manager') 
+                                    },
+                                    { 
+                                      text: 'Delete', 
+                                      style: 'destructive',
+                                      onPress: () => handleRemoveItem(item.id)
+                                    }
+                                  ]
+                                );
+                              }}
+                            >
+                              <Ionicons name="ellipsis-vertical" size={16} color="white" />
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                              style={styles.closetDeleteAction}
+                              onPress={() => handleRemoveItem(item.id)}
+                            >
+                              <Ionicons name="trash-outline" size={16} color="#f5576c" />
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       ))}
                     </View>
@@ -1838,7 +1920,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    width: 300,
+    width: 350,
     zIndex: 1000,
     borderRadius: 20,
     margin: 10,
@@ -1884,16 +1966,16 @@ const styles = StyleSheet.create({
   },
   closetItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    padding: 12,
-    gap: 12,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
   },
   closetItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1923,6 +2005,101 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 14,
     fontWeight: '500',
+  },
+  
+  // Enhanced Closet Styles
+  closetFilterContainer: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  closetFilterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    gap: 4,
+  },
+  activeClosetFilter: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  closetFilterText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  closetItemVisual: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  closetColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'white',
+    marginTop: -4,
+    marginBottom: 4,
+  },
+  closetMaterialBadge: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  closetMaterialText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  closetItemDetails: {
+    marginTop: 4,
+    gap: 4,
+  },
+  closetDetailBadge: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  closetDetailText: {
+    color: 'white',
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  closetOccasions: {
+    flexDirection: 'row',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  closetOccasionTag: {
+    backgroundColor: 'rgba(245, 87, 108, 0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  closetOccasionText: {
+    color: 'white',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  closetItemActions: {
+    gap: 8,
+  },
+  closetEditAction: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 6,
+    borderRadius: 6,
+  },
+  closetDeleteAction: {
+    backgroundColor: 'rgba(245, 87, 108, 0.3)',
+    padding: 6,
+    borderRadius: 6,
   },
   
   // Debug Styles (remove later)
