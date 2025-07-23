@@ -8,6 +8,7 @@ import {
     Animated,
     Dimensions,
     Modal,
+    RefreshControl,
     SafeAreaView,
     ScrollView,
     StyleSheet,
@@ -17,17 +18,9 @@ import {
     View
 } from 'react-native';
 import { AIOutfitRecommendationService } from '../services/AIOutfitRecommendationService';
+import { wardrobeService, WardrobeItem } from '../services/WardrobeService';
 
 const { width, height } = Dimensions.get('window');
-
-interface WardrobeItem {
-  id: string;
-  name: string;
-  category: string;
-  color: string;
-  material: string;
-  occasion: string[];
-  icon: string;
   image?: string;
 }
 
@@ -128,6 +121,7 @@ export default function WardrobeAssessment() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAddClothesModalVisible, setIsAddClothesModalVisible] = useState(false);
   const [isClosetVisible, setIsClosetVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
@@ -141,9 +135,26 @@ export default function WardrobeAssessment() {
   const [newClothingNotes, setNewClothingNotes] = useState('');
 
   useEffect(() => {
-    initializeWardrobe();
+    loadWardrobeItems();
     animateEntrance();
   }, []);
+
+  const loadWardrobeItems = async () => {
+    try {
+      const items = await wardrobeService.getWardrobeItems();
+      setWardrobeItems(items);
+    } catch (error) {
+      console.error('Error loading wardrobe items:', error);
+      // Fall back to sample data if backend fails
+      initializeWardrobe();
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadWardrobeItems();
+    setRefreshing(false);
+  };
 
   const animateEntrance = () => {
     Animated.parallel([
@@ -276,9 +287,6 @@ export default function WardrobeAssessment() {
       console.error('Error adding item:', error);
       Alert.alert('Error', 'Failed to add item to wardrobe. Please try again.');
     }
-    
-    console.log('Item added successfully!');
-    Alert.alert('Success!', `${newItem.name} has been added to your wardrobe!`);
   };
 
   const handleRemoveItem = (itemId: string) => {
@@ -294,9 +302,16 @@ export default function WardrobeAssessment() {
         { 
           text: 'Remove', 
           style: 'destructive',
-          onPress: () => {
-            console.log('Removing item:', itemId);
-            setWardrobeItems(prev => prev.filter(item => item.id !== itemId));
+          onPress: async () => {
+            try {
+              console.log('Removing item:', itemId);
+              await wardrobeService.deleteWardrobeItem(itemId);
+              await loadWardrobeItems();
+              Alert.alert('Success', 'Item removed from wardrobe!');
+            } catch (error) {
+              console.error('Error removing item:', error);
+              Alert.alert('Error', 'Failed to remove item. Please try again.');
+            }
           }
         }
       ]
@@ -631,7 +646,12 @@ export default function WardrobeAssessment() {
             </View>
           )}
 
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="white" />
+            }
+          >
             {/* Categories Section */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Clothing Categories</Text>
