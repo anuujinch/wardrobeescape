@@ -102,7 +102,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={getGradientColors()}
+          colors={getGradientColors() as any}
           style={getButtonStyle()}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

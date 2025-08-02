@@ -78,11 +78,21 @@ export default function WardrobeManagerScreen() {
     setRefreshing(false);
   };
 
+  // Helper function to get primary color as string for display
+  const getPrimaryColor = (colors: WardrobeItem['colors']) => {
+    return colors?.[0]?.primary || '';
+  };
+
+  // Helper function to get material fabric as string for display
+  const getMaterialFabric = (material: WardrobeItem['material']) => {
+    return material?.fabric || '';
+  };
+
   const handleEditItem = (item: WardrobeItem) => {
     setSelectedItem(item);
     setEditName(item.name);
-    setEditColor(item.color || '');
-    setEditMaterial(item.material || '');
+    setEditColor(getPrimaryColor(item.colors));
+    setEditMaterial(getMaterialFabric(item.material));
     setEditSize(item.size || '');
     setEditNotes(item.notes || '');
     setEditModalVisible(true);
@@ -95,13 +105,13 @@ export default function WardrobeManagerScreen() {
       const updatedItem = {
         ...selectedItem,
         name: editName,
-        color: editColor,
-        material: editMaterial,
+        colors: [{ primary: editColor }],
+        material: { fabric: editMaterial },
         size: editSize,
         notes: editNotes
       };
 
-      await wardrobeService.updateWardrobeItem(selectedItem.id, updatedItem);
+      await wardrobeService.updateWardrobeItem(selectedItem._id!, updatedItem);
       await loadWardrobeItems();
       setEditModalVisible(false);
       Alert.alert('Success', 'Item updated successfully!');
@@ -122,7 +132,7 @@ export default function WardrobeManagerScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await wardrobeService.deleteWardrobeItem(item.id);
+              await wardrobeService.deleteWardrobeItem(item._id!);
               await loadWardrobeItems();
               Alert.alert('Success', 'Item deleted successfully!');
             } catch (error) {
@@ -247,12 +257,12 @@ export default function WardrobeManagerScreen() {
           ) : (
             <View style={styles.itemsGrid}>
               {filteredItems.map((item) => (
-                <View key={item.id} style={styles.itemCard}>
+                <View key={item._id} style={styles.itemCard}>
                   <BlurView intensity={20} tint="light" style={styles.itemBlur}>
                     {/* Item Visual */}
                     <View style={styles.itemVisual}>
                       <LinearGradient
-                        colors={[getCategoryColor(item.category), getColorHex(item.color || '')]}
+                        colors={[getCategoryColor(item.category), getColorHex(getPrimaryColor(item.colors))]}
                         style={styles.itemIcon}
                       >
                         <Ionicons 
@@ -261,9 +271,9 @@ export default function WardrobeManagerScreen() {
                           color="white" 
                         />
                       </LinearGradient>
-                      {item.color && (
+                      {getPrimaryColor(item.colors) && (
                         <View 
-                          style={[styles.colorDot, { backgroundColor: getColorHex(item.color) }]} 
+                          style={[styles.colorDot, { backgroundColor: getColorHex(getPrimaryColor(item.colors)) }]} 
                         />
                       )}
                     </View>
@@ -276,13 +286,13 @@ export default function WardrobeManagerScreen() {
                         <Text style={styles.itemSize}>Size: {item.size}</Text>
                       )}
                       {item.material && (
-                        <Text style={styles.itemMaterial}>{item.material}</Text>
+                        <Text style={styles.itemMaterial}>{getMaterialFabric(item.material)}</Text>
                       )}
-                      {item.occasions && item.occasions.length > 0 && (
+                      {item.tags && item.tags.length > 0 && (
                         <View style={styles.occasionsContainer}>
-                          {item.occasions.slice(0, 2).map((occasion, index) => (
+                          {item.tags.slice(0, 2).map((tag, index) => (
                             <View key={index} style={styles.occasionTag}>
-                              <Text style={styles.occasionText}>{occasion}</Text>
+                              <Text style={styles.occasionText}>{tag}</Text>
                             </View>
                           ))}
                         </View>

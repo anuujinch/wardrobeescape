@@ -17,9 +17,9 @@ export default function OutfitRecommendationsScreen() {
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
   // Future functionality for outfit selection and wardrobe analysis
-  // const [selectedOutfit, setSelectedOutfit] = useState<OutfitRecommendation | null>(null);
-  // const [wardrobeGaps, setWardrobeGaps] = useState<string[]>([]);
-  // const [missingItems, setMissingItems] = useState<any[]>([]);
+  const [selectedOutfit, setSelectedOutfit] = useState<OutfitRecommendation | null>(null);
+  const [wardrobeGaps, setWardrobeGaps] = useState<string[]>([]);
+  const [missingItems, setMissingItems] = useState<any[]>([]);
 
   useEffect(() => {
     generateRecommendations();
@@ -70,11 +70,11 @@ export default function OutfitRecommendationsScreen() {
   };
 
   const suggestMissingPieces = (outfit: OutfitRecommendation, wardrobe: any[], preferences: UserPreferences) => {
-    const missing = [];
+    const missing: any[] = [];
     const categories = outfit.items.map(item => item.category);
     
     // Essential pieces based on event type
-    const essentialPieces = {
+    const essentialPieces: { [key: string]: string[] } = {
       'Work': ['Tops', 'Bottoms', 'Shoes'],
       'Formal': ['Tops', 'Bottoms', 'Shoes', 'Outerwear'],
       'Casual': ['Tops', 'Bottoms'],
@@ -84,7 +84,7 @@ export default function OutfitRecommendationsScreen() {
 
     const required = essentialPieces[preferences.eventType] || ['Tops', 'Bottoms'];
     
-    required.forEach(requiredCategory => {
+    required.forEach((requiredCategory: string) => {
       if (!categories.includes(requiredCategory)) {
         // Suggest an item to buy
         const suggestion = generateSuggestion(requiredCategory, preferences);
@@ -100,7 +100,7 @@ export default function OutfitRecommendationsScreen() {
   };
 
   const generateSuggestion = (category: string, preferences: UserPreferences) => {
-    const suggestions = {
+    const suggestions: { [key: string]: { [key: string]: { name: string; description: string } } } = {
       'Tops': {
         'Work': { name: 'Professional Blouse', description: 'A crisp white or neutral colored blouse' },
         'Formal': { name: 'Dress Shirt', description: 'Elegant button-down shirt' },
@@ -229,17 +229,17 @@ export default function OutfitRecommendationsScreen() {
 
                  {/* AI Model Visualization */}
                  <View style={styles.aiModelContainer}>
-                   <AIOutfitModel 
-                     outfit={outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]}
-                     eventType={params.eventType as string || 'Casual'}
-                     mood={params.mood as string || 'Comfortable'}
-                   />
-                   {/* Debug info for avatar */}
-                   <View style={styles.debugAvatarInfo}>
-                     <Text style={styles.debugText}>
-                       Avatar: {(outfit.completeOutfit || [...outfit.items, ...(outfit.missingPieces || [])]).length} items
-                     </Text>
-                   </View>
+                                     <AIOutfitModel 
+                    outfit={outfit.items}
+                    eventType={params.eventType as string || 'Casual'}
+                    mood={params.mood as string || 'Comfortable'}
+                  />
+                  {/* Debug info for avatar */}
+                  <View style={styles.debugAvatarInfo}>
+                    <Text style={styles.debugText}>
+                      Avatar: {outfit.items.length} items
+                    </Text>
+                  </View>
                  </View>
 
                 {/* Your Items */}
@@ -258,11 +258,11 @@ export default function OutfitRecommendationsScreen() {
                   </View>
 
                   {/* Missing/Suggested Items */}
-                  {outfit.missingPieces?.length > 0 && (
+                  {missingItems.length > 0 && (
                     <>
                       <Text style={styles.sectionTitle}>Suggested to Complete Look</Text>
                       <View style={styles.itemsGrid}>
-                        {outfit.missingPieces.map((item, itemIndex) => (
+                        {missingItems.map((item, itemIndex) => (
                           <View key={itemIndex} style={[styles.itemCard, styles.suggestedItem]}>
                             <View style={styles.itemIconContainer}>
                               <Ionicons name="add-circle" size={16} color="#f5576c" />
@@ -323,17 +323,17 @@ export default function OutfitRecommendationsScreen() {
 }
 
 // Utility function for future use
-// const getItemIcon = (category: string) => {
-//   const icons: { [key: string]: string } = {
-//     'Tops': 'shirt',
-//     'Bottoms': 'pants',
-//     'Dresses': 'dress',
-//     'Outerwear': 'jacket',
-//     'Shoes': 'shoe',
-//     'Accessories': 'watch'
-//   };
-//   return icons[category] || 'shirt';
-// };
+const getItemIcon = (category: string) => {
+  const icons: { [key: string]: string } = {
+    'Tops': 'shirt',
+    'Bottoms': 'pants',
+    'Dresses': 'dress',
+    'Outerwear': 'jacket',
+    'Shoes': 'shoe',
+    'Accessories': 'watch'
+  };
+  return icons[category] || 'shirt';
+};
 
 const styles = StyleSheet.create({
   container: {

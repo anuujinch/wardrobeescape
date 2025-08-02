@@ -176,7 +176,7 @@ export default function ExploreScreen() {
             style={styles.trendGradient}
           >
             <View style={styles.trendHeader}>
-              <Ionicons name={trend.icon} size={32} color="white" />
+              <Ionicons name={trend.icon as any} size={32} color="white" />
               <Text style={styles.trendCategory}>{trend.category}</Text>
             </View>
             <Text style={styles.trendTitle}>{trend.title}</Text>
@@ -199,7 +199,7 @@ export default function ExploreScreen() {
               colors={[collection.color, `${collection.color}60`]}
               style={styles.collectionIcon}
             >
-              <Ionicons name={collection.icon} size={24} color="white" />
+              <Ionicons name={collection.icon as any} size={24} color="white" />
             </LinearGradient>
             <View style={styles.collectionInfo}>
               <Text style={styles.collectionName}>{collection.name}</Text>
