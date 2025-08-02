@@ -60,7 +60,7 @@ export default function AIOutfitModel({ outfit, eventType, mood }: AIOutfitModel
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={getOutfitMoodColors()}
+        colors={getOutfitMoodColors() as any}
         style={styles.backgroundGradient}
       >
         {/* Model Title */}

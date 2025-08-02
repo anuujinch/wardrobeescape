@@ -82,7 +82,7 @@ export default function DebugWardrobe() {
               setIsModalVisible(true);
             }}
           >
-            <Ionicons name={category.icon} size={24} color="blue" />
+            <Ionicons name={category.icon as any} size={24} color="blue" />
             <Text style={styles.categoryText}>{category.name}</Text>
           </TouchableOpacity>
         ))}

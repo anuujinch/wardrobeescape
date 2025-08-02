@@ -80,7 +80,7 @@ export const FloatingCard: React.FC<FloatingCardProps> = ({
       ]}
     >
       <LinearGradient
-        colors={gradient}
+        colors={gradient as any}
         style={[
           styles.card,
           {

@@ -20,7 +20,7 @@ import {
 import { AIOutfitRecommendationService } from '../services/AIOutfitRecommendationService';
 import { wardrobeService, WardrobeItem } from '../services/WardrobeService';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface Filters {
   eventType: string;
@@ -121,7 +121,7 @@ export default function WardrobeAssessment() {
   const [isClosetVisible, setIsClosetVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [closetFilter, setClosetFilter] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep] = useState(0); // setCurrentStep removed as unused
   const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
   // Add clothes form state
@@ -186,49 +186,44 @@ export default function WardrobeAssessment() {
   const initializeWardrobe = () => {
     const sampleItems: WardrobeItem[] = [
       {
-        id: '1',
+        _id: '1',
         name: 'White Button-Down Shirt',
         category: 'tops',
-        color: 'white',
-        material: 'cotton',
-        occasion: ['work', 'casual', 'formal'],
-        icon: 'shirt-outline',
+        colors: [{ primary: 'white' }],
+        material: { fabric: 'cotton' },
+        tags: ['work', 'casual', 'formal'],
       },
       {
-        id: '2',
+        _id: '2',
         name: 'Black Skinny Jeans',
         category: 'bottoms',
-        color: 'black',
-        material: 'denim',
-        occasion: ['casual', 'date', 'party'],
-        icon: 'fitness-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'denim' },
+        tags: ['casual', 'date', 'party'],
       },
       {
-        id: '3',
+        _id: '3',
         name: 'Little Black Dress',
         category: 'dresses',
-        color: 'black',
-        material: 'polyester',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'woman-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'polyester' },
+        tags: ['date', 'party', 'formal'],
       },
       {
-        id: '4',
+        _id: '4',
         name: 'Black Leather Boots',
         category: 'shoes',
-        color: 'black',
-        material: 'leather',
-        occasion: ['work', 'casual', 'date'],
-        icon: 'footsteps-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'leather' },
+        tags: ['work', 'casual', 'date'],
       },
       {
-        id: '5',
+        _id: '5',
         name: 'Statement Necklace',
         category: 'accessories',
-        color: 'gold',
-        material: 'metal',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'diamond-outline',
+        colors: [{ primary: 'gold' }],
+        material: { fabric: 'metal' },
+        tags: ['date', 'party', 'formal'],
       },
     ];
     setWardrobeItems(sampleItems);
@@ -265,17 +260,16 @@ export default function WardrobeAssessment() {
     try {
       console.log('Creating new item...');
       const newItem: WardrobeItem = {
-        id: Date.now().toString(),
         name: newClothingName.trim(),
         category: selectedCategory,
-        color: newClothingColor,
-        material: newClothingMaterial,
-        occasions: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
+        colors: [{ primary: newClothingColor }],
+        material: { fabric: newClothingMaterial },
+        tags: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
         size: newClothingSize || undefined,
         style: newClothingStyle || undefined,
         notes: newClothingNotes || undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       console.log('New item data:', newItem);
@@ -322,7 +316,7 @@ export default function WardrobeAssessment() {
 
   const handleRemoveItem = (itemId: string) => {
     console.log('Long press detected for item:', itemId);
-    const item = wardrobeItems.find(w => w.id === itemId);
+    const item = wardrobeItems.find(w => w._id === itemId);
     console.log('Found item:', item);
     
     Alert.alert(
@@ -346,7 +340,7 @@ export default function WardrobeAssessment() {
                 console.log('Backend failed, removing from local state:', backendError);
                 
                 // Remove from local state as fallback
-                setWardrobeItems(prev => prev.filter(item => item.id !== itemId));
+                setWardrobeItems(prev => prev.filter(item => item._id !== itemId));
                 console.log('Item removed from local state');
               }
               
@@ -370,10 +364,10 @@ export default function WardrobeAssessment() {
   };
 
   // Helper functions for closet
-  const getColorHex = (colorName: string) => {
-    const color = COLORS.find(c => c.name.toLowerCase() === colorName.toLowerCase());
-    return color?.hex || '#667eea';
-  };
+  // const getColorHex = (colorName: string) => {
+  //   const color = COLORS.find(c => c.name.toLowerCase() === colorName.toLowerCase());
+  //   return color?.hex || '#667eea';
+  // };
 
   const getCategoryIcon = (category: string) => {
     const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
@@ -386,38 +380,53 @@ export default function WardrobeAssessment() {
   };
 
   // Get texture pattern based on material
-  const getMaterialDecal = (material: string) => {
-    const materialMap = {
-      'Cotton': { pattern: '⋯', icon: 'ellipsis-horizontal' },
-      'Denim': { pattern: '╫', icon: 'grid' },
-      'Wool': { pattern: '≋', icon: 'cellular' },
-      'Silk': { pattern: '∼', icon: 'sparkles' },
-      'Leather': { pattern: '▦', icon: 'square' },
-      'Polyester': { pattern: '◊', icon: 'diamond' },
-      'Linen': { pattern: '⧨', icon: 'remove' },
-      'Cashmere': { pattern: '※', icon: 'star' },
-      'Velvet': { pattern: '●', icon: 'radio-button-on' },
+  const getMaterialDecal = (material: WardrobeItem['material']) => {
+    const fabric = material?.fabric || '';
+    const materialMap: { [key: string]: { pattern: string; icon: string } } = {
+      'cotton': { pattern: '⋯', icon: 'ellipsis-horizontal' },
+      'denim': { pattern: '╫', icon: 'grid' },
+      'wool': { pattern: '≋', icon: 'cellular' },
+      'silk': { pattern: '∼', icon: 'sparkles' },
+      'leather': { pattern: '▦', icon: 'square' },
+      'polyester': { pattern: '◊', icon: 'diamond' },
+      'linen': { pattern: '⧨', icon: 'remove' },
+      'cashmere': { pattern: '※', icon: 'star' },
+      'velvet': { pattern: '●', icon: 'radio-button-on' },
+      'metal': { pattern: '◈', icon: 'diamond-outline' },
     };
-    return materialMap[material] || { pattern: '◦', icon: 'radio-button-off' };
+    return materialMap[fabric.toLowerCase()] || { pattern: '◦', icon: 'radio-button-off' };
   };
 
   // Get color-specific accent
-  const getColorAccent = (color: string) => {
-    const colorAccents = {
-      'Red': '#ff4757',
-      'Blue': '#3742fa', 
-      'Green': '#2ed573',
-      'Yellow': '#ffa502',
-      'Purple': '#5f27cd',
-      'Pink': '#ff3838',
-      'Orange': '#ff6348',
-      'Brown': '#8b4513',
-      'Black': '#2f3542',
-      'White': '#f1f2f6',
-      'Gray': '#57606f',
-      'Navy': '#2f3542'
+  const getColorAccent = (colors: WardrobeItem['colors']) => {
+    const primaryColor = colors?.[0]?.primary || '';
+    const colorAccents: { [key: string]: string } = {
+      'red': '#ff4757',
+      'blue': '#3742fa', 
+      'green': '#2ed573',
+      'yellow': '#ffa502',
+      'purple': '#5f27cd',
+      'pink': '#ff3838',
+      'orange': '#ff6348',
+      'brown': '#8b4513',
+      'black': '#2f3542',
+      'white': '#f1f2f6',
+      'gray': '#57606f',
+      'grey': '#57606f',
+      'navy': '#2f3542',
+      'gold': '#f39c12',
     };
-    return colorAccents[color] || '#667eea';
+    return colorAccents[primaryColor.toLowerCase()] || '#667eea';
+  };
+
+  // Helper function to get primary color as string for display
+  const getPrimaryColor = (colors: WardrobeItem['colors']) => {
+    return colors?.[0]?.primary || '';
+  };
+
+  // Helper function to get material fabric as string for display
+  const getMaterialFabric = (material: WardrobeItem['material']) => {
+    return material?.fabric || '';
   };
 
   // Filter closet items based on selected filter
@@ -535,17 +544,17 @@ export default function WardrobeAssessment() {
       
       // Convert wardrobe items to the format expected by AI service
       const clothingItems = wardrobeItems.map(item => ({
-        id: item.id,
+        id: item._id || Date.now().toString(),
         name: item.name,
         category: item.category,
-        color: item.color,
-        material: item.material,
-        occasions: item.occasions || item.occasion || [],
+        color: getPrimaryColor(item.colors),
+        material: getMaterialFabric(item.material),
+        occasions: item.tags || [],
         size: item.size,
         style: item.style,
         // Add visual properties for avatar generation
-        colorAccent: getColorAccent(item.color || ''),
-        materialDecal: getMaterialDecal(item.material || ''),
+        colorAccent: getColorAccent(item.colors),
+        materialDecal: getMaterialDecal(item.material),
         categoryIcon: getCategoryIcon(item.category),
         categoryColor: getCategoryColor(item.category)
       }));
@@ -719,7 +728,7 @@ export default function WardrobeAssessment() {
         >
           <View style={styles.header}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.headerBackButton}
               onPress={() => router.back()}
             >
               <Ionicons name="arrow-back" size={24} color="white" />
@@ -784,7 +793,7 @@ export default function WardrobeAssessment() {
                         style={[styles.closetFilterBtn, closetFilter === category.id && styles.activeClosetFilter]}
                         onPress={() => setClosetFilter(category.id)}
                       >
-                        <Ionicons name={category.icon} size={14} color="white" />
+                        <Ionicons name={category.icon as any} size={14} color="white" />
                         <Text style={styles.closetFilterText}>{category.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -805,20 +814,20 @@ export default function WardrobeAssessment() {
                   ) : (
                     <View style={styles.closetItems}>
                       {filteredClosetItems.map((item) => (
-                        <View key={item.id} style={styles.closetItem}>
+                        <View key={item._id} style={styles.closetItem}>
                                                      {/* Enhanced Visual Item Card */}
                            <View style={styles.closetItemVisual}>
                              <LinearGradient
-                               colors={[getCategoryColor(item.category), getColorAccent(item.color || '')]}
+                               colors={[getCategoryColor(item.category), getColorAccent(item.colors)]}
                                style={styles.closetItemIcon}
                              >
-                               <Ionicons name={getCategoryIcon(item.category)} size={20} color="white" />
+                               <Ionicons name={getCategoryIcon(item.category) as any} size={20} color="white" />
                                
                                {/* Material Decal Overlay */}
                                {item.material && (
                                  <View style={styles.materialDecalOverlay}>
                                    <Ionicons 
-                                     name={getMaterialDecal(item.material).icon} 
+                                     name={getMaterialDecal(item.material).icon as any} 
                                      size={12} 
                                      color="rgba(255,255,255,0.6)" 
                                    />
@@ -829,17 +838,17 @@ export default function WardrobeAssessment() {
                              {/* Color indicator with accent */}
                              <View style={styles.colorIndicatorContainer}>
                                <View 
-                                 style={[styles.closetColorDot, { backgroundColor: getColorAccent(item.color || '') }]} 
+                                 style={[styles.closetColorDot, { backgroundColor: getColorAccent(item.colors) }]} 
                                />
                                {/* Color name */}
-                               <Text style={styles.colorName}>{item.color}</Text>
+                               <Text style={styles.colorName}>{getPrimaryColor(item.colors)}</Text>
                              </View>
                              
                              {/* Material badge with pattern */}
                              {item.material && (
-                               <View style={[styles.closetMaterialBadge, { backgroundColor: getColorAccent(item.color || '') + '40' }]}>
+                               <View style={[styles.closetMaterialBadge, { backgroundColor: getColorAccent(item.colors) + '40' }]}>
                                  <Text style={styles.materialPattern}>{getMaterialDecal(item.material).pattern}</Text>
-                                 <Text style={styles.closetMaterialText}>{item.material}</Text>
+                                 <Text style={styles.closetMaterialText}>{getMaterialFabric(item.material)}</Text>
                                </View>
                              )}
                            </View>
@@ -855,11 +864,11 @@ export default function WardrobeAssessment() {
                                   <Text style={styles.closetDetailText}>Size: {item.size}</Text>
                                 </View>
                               )}
-                              {(item.occasions || item.occasion) && (
+                              {item.tags && item.tags.length > 0 && (
                                 <View style={styles.closetOccasions}>
-                                  {(item.occasions || item.occasion || []).slice(0, 2).map((occ, idx) => (
+                                  {item.tags.slice(0, 2).map((tag, idx) => (
                                     <View key={idx} style={styles.closetOccasionTag}>
-                                      <Text style={styles.closetOccasionText}>{occ}</Text>
+                                      <Text style={styles.closetOccasionText}>{tag}</Text>
                                     </View>
                                   ))}
                                 </View>
@@ -885,7 +894,7 @@ export default function WardrobeAssessment() {
                                     { 
                                       text: 'Delete', 
                                       style: 'destructive',
-                                      onPress: () => handleRemoveItem(item.id)
+                                      onPress: () => handleRemoveItem(item._id!)
                                     }
                                   ]
                                 );
@@ -896,7 +905,7 @@ export default function WardrobeAssessment() {
                             
                             <TouchableOpacity
                               style={styles.closetDeleteAction}
-                              onPress={() => handleRemoveItem(item.id)}
+                              onPress={() => handleRemoveItem(item._id!)}
                             >
                               <Ionicons name="trash-outline" size={16} color="#f5576c" />
                             </TouchableOpacity>
@@ -951,7 +960,7 @@ export default function WardrobeAssessment() {
                 </Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.wardrobeItems}>
                   {wardrobeItems.slice(0, 10).map((item, index) => (
-                    <AnimatedCard key={item.id} delay={index * 100} style={styles.wardrobeItem}>
+                    <AnimatedCard key={item._id} delay={index * 100} style={styles.wardrobeItem}>
                       <TouchableOpacity
                         style={styles.wardrobeItemContainer}
                         onPress={() => setIsClosetVisible(true)}
@@ -959,10 +968,10 @@ export default function WardrobeAssessment() {
                                                  <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
                            <View style={styles.itemHeader}>
                              <LinearGradient
-                               colors={[getCategoryColor(item.category), getColorAccent(item.color || '')]}
+                               colors={[getCategoryColor(item.category), getColorAccent(item.colors)]}
                                style={styles.wardrobeItemIconContainer}
                              >
-                               <Ionicons name={getCategoryIcon(item.category)} size={24} color="white" />
+                               <Ionicons name={getCategoryIcon(item.category) as any} size={24} color="white" />
                                
                                {/* Material Decal */}
                                {item.material && (
@@ -974,17 +983,17 @@ export default function WardrobeAssessment() {
                                )}
                              </LinearGradient>
                              
-                             <View style={[styles.colorDot, { backgroundColor: getColorAccent(item.color || '') }]} />
+                             <View style={[styles.colorDot, { backgroundColor: getColorAccent(item.colors) }]} />
                            </View>
                           <Text style={styles.wardrobeItemName} numberOfLines={2}>{item.name}</Text>
                           <Text style={styles.wardrobeItemDetails}>
-                            {item.color} • {item.material}
+                            {getPrimaryColor(item.colors)} • {getMaterialFabric(item.material)}
                           </Text>
                           <Text style={styles.wardrobeItemCategory}>{item.category}</Text>
                           <View style={styles.occasionTags}>
-                            {(item.occasions || item.occasion || []).slice(0, 2).map((occ, idx) => (
+                            {(item.tags || []).slice(0, 2).map((tag, idx) => (
                               <View key={idx} style={styles.occasionTag}>
-                                <Text style={styles.occasionTagText}>{occ}</Text>
+                                                                  <Text style={styles.occasionTagText}>{tag}</Text>
                               </View>
                             ))}
                           </View>
@@ -1035,7 +1044,7 @@ export default function WardrobeAssessment() {
                     >
                       <BlurView intensity={20} tint="light" style={styles.wardrobeItemBlur}>
                         <View style={styles.itemHeader}>
-                          <Ionicons name={suggestion.icon} size={28} color="#f5576c" />
+                          <Ionicons name={suggestion.icon as any} size={28} color="#f5576c" />
                           <View style={styles.suggestionBadge}>
                             <Ionicons name="add-circle" size={16} color="white" />
                           </View>
@@ -1197,7 +1206,7 @@ export default function WardrobeAssessment() {
                               onPress={() => setNewClothingMaterial(material.name)}
                             >
                               <Ionicons 
-                                name={material.icon} 
+                                                                 name={material.icon as any} 
                                 size={20} 
                                 color={newClothingMaterial === material.name ? 'white' : '#667eea'} 
                               />
@@ -1248,7 +1257,7 @@ export default function WardrobeAssessment() {
                               onPress={() => setNewClothingStyle(style.name)}
                             >
                               <Ionicons 
-                                name={style.icon} 
+                                                                 name={style.icon as any} 
                                 size={16} 
                                 color={newClothingStyle === style.name ? 'white' : '#667eea'} 
                               />
@@ -1284,7 +1293,7 @@ export default function WardrobeAssessment() {
                               onPress={() => toggleOccasion(event.id)}
                             >
                               <Ionicons 
-                                name={event.icon} 
+                                                                 name={event.icon as any} 
                                 size={16} 
                                 color={newClothingOccasions.includes(event.id) ? 'white' : '#667eea'} 
                               />
@@ -1449,7 +1458,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  backButton: {
+  headerBackButton: {
     padding: 8,
   },
   title: {

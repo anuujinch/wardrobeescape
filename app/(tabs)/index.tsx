@@ -3,9 +3,10 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+// Dimensions available if needed in future
+// const { width, height } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));

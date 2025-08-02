@@ -15,7 +15,7 @@ import {
   View
 } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface TrendItem {
   id: string;
@@ -115,7 +115,8 @@ const COLOR_PALETTES = [
 export default function ExploreScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // Category filtering functionality can be added here in the future
+  // const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
     Animated.parallel([
@@ -175,7 +176,7 @@ export default function ExploreScreen() {
             style={styles.trendGradient}
           >
             <View style={styles.trendHeader}>
-              <Ionicons name={trend.icon} size={32} color="white" />
+              <Ionicons name={trend.icon as any} size={32} color="white" />
               <Text style={styles.trendCategory}>{trend.category}</Text>
             </View>
             <Text style={styles.trendTitle}>{trend.title}</Text>
@@ -198,7 +199,7 @@ export default function ExploreScreen() {
               colors={[collection.color, `${collection.color}60`]}
               style={styles.collectionIcon}
             >
-              <Ionicons name={collection.icon} size={24} color="white" />
+              <Ionicons name={collection.icon as any} size={24} color="white" />
             </LinearGradient>
             <View style={styles.collectionInfo}>
               <Text style={styles.collectionName}>{collection.name}</Text>
