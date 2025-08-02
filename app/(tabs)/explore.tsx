@@ -15,7 +15,7 @@ import {
   View
 } from 'react-native';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface TrendItem {
   id: string;
@@ -115,7 +115,8 @@ const COLOR_PALETTES = [
 export default function ExploreScreen() {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(30));
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  // Category filtering functionality can be added here in the future
+  // const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
     Animated.parallel([

@@ -16,9 +16,10 @@ export default function OutfitRecommendationsScreen() {
   const params = useLocalSearchParams();
   const [recommendations, setRecommendations] = useState<OutfitRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOutfit, setSelectedOutfit] = useState<OutfitRecommendation | null>(null);
-  const [wardrobeGaps, setWardrobeGaps] = useState<string[]>([]);
-  const [missingItems, setMissingItems] = useState<any[]>([]);
+  // Future functionality for outfit selection and wardrobe analysis
+  // const [selectedOutfit, setSelectedOutfit] = useState<OutfitRecommendation | null>(null);
+  // const [wardrobeGaps, setWardrobeGaps] = useState<string[]>([]);
+  // const [missingItems, setMissingItems] = useState<any[]>([]);
 
   useEffect(() => {
     generateRecommendations();
@@ -321,17 +322,18 @@ export default function OutfitRecommendationsScreen() {
   );
 }
 
-const getItemIcon = (category: string) => {
-  const icons: { [key: string]: string } = {
-    'Tops': 'shirt',
-    'Bottoms': 'pants',
-    'Dresses': 'dress',
-    'Outerwear': 'jacket',
-    'Shoes': 'shoe',
-    'Accessories': 'watch'
-  };
-  return icons[category] || 'shirt';
-};
+// Utility function for future use
+// const getItemIcon = (category: string) => {
+//   const icons: { [key: string]: string } = {
+//     'Tops': 'shirt',
+//     'Bottoms': 'pants',
+//     'Dresses': 'dress',
+//     'Outerwear': 'jacket',
+//     'Shoes': 'shoe',
+//     'Accessories': 'watch'
+//   };
+//   return icons[category] || 'shirt';
+// };
 
 const styles = StyleSheet.create({
   container: {

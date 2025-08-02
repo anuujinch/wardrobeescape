@@ -20,7 +20,7 @@ import {
 import { AIOutfitRecommendationService } from '../services/AIOutfitRecommendationService';
 import { wardrobeService, WardrobeItem } from '../services/WardrobeService';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface Filters {
   eventType: string;
@@ -121,7 +121,7 @@ export default function WardrobeAssessment() {
   const [isClosetVisible, setIsClosetVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [closetFilter, setClosetFilter] = useState('');
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep] = useState(0); // setCurrentStep removed as unused
   const [addClothesStep, setAddClothesStep] = useState(0); // New step for add clothes flow
   
   // Add clothes form state
@@ -186,49 +186,44 @@ export default function WardrobeAssessment() {
   const initializeWardrobe = () => {
     const sampleItems: WardrobeItem[] = [
       {
-        id: '1',
+        _id: '1',
         name: 'White Button-Down Shirt',
         category: 'tops',
-        color: 'white',
-        material: 'cotton',
-        occasion: ['work', 'casual', 'formal'],
-        icon: 'shirt-outline',
+        colors: [{ primary: 'white' }],
+        material: { fabric: 'cotton' },
+        tags: ['work', 'casual', 'formal'],
       },
       {
-        id: '2',
+        _id: '2',
         name: 'Black Skinny Jeans',
         category: 'bottoms',
-        color: 'black',
-        material: 'denim',
-        occasion: ['casual', 'date', 'party'],
-        icon: 'fitness-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'denim' },
+        tags: ['casual', 'date', 'party'],
       },
       {
-        id: '3',
+        _id: '3',
         name: 'Little Black Dress',
         category: 'dresses',
-        color: 'black',
-        material: 'polyester',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'woman-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'polyester' },
+        tags: ['date', 'party', 'formal'],
       },
       {
-        id: '4',
+        _id: '4',
         name: 'Black Leather Boots',
         category: 'shoes',
-        color: 'black',
-        material: 'leather',
-        occasion: ['work', 'casual', 'date'],
-        icon: 'footsteps-outline',
+        colors: [{ primary: 'black' }],
+        material: { fabric: 'leather' },
+        tags: ['work', 'casual', 'date'],
       },
       {
-        id: '5',
+        _id: '5',
         name: 'Statement Necklace',
         category: 'accessories',
-        color: 'gold',
-        material: 'metal',
-        occasion: ['date', 'party', 'formal'],
-        icon: 'diamond-outline',
+        colors: [{ primary: 'gold' }],
+        material: { fabric: 'metal' },
+        tags: ['date', 'party', 'formal'],
       },
     ];
     setWardrobeItems(sampleItems);
@@ -265,17 +260,16 @@ export default function WardrobeAssessment() {
     try {
       console.log('Creating new item...');
       const newItem: WardrobeItem = {
-        id: Date.now().toString(),
         name: newClothingName.trim(),
         category: selectedCategory,
-        color: newClothingColor,
-        material: newClothingMaterial,
-        occasions: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
+        colors: [{ primary: newClothingColor }],
+        material: { fabric: newClothingMaterial },
+        tags: newClothingOccasions.length > 0 ? newClothingOccasions : ['casual'],
         size: newClothingSize || undefined,
         style: newClothingStyle || undefined,
         notes: newClothingNotes || undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       console.log('New item data:', newItem);
@@ -322,7 +316,7 @@ export default function WardrobeAssessment() {
 
   const handleRemoveItem = (itemId: string) => {
     console.log('Long press detected for item:', itemId);
-    const item = wardrobeItems.find(w => w.id === itemId);
+    const item = wardrobeItems.find(w => w._id === itemId);
     console.log('Found item:', item);
     
     Alert.alert(
@@ -370,10 +364,10 @@ export default function WardrobeAssessment() {
   };
 
   // Helper functions for closet
-  const getColorHex = (colorName: string) => {
-    const color = COLORS.find(c => c.name.toLowerCase() === colorName.toLowerCase());
-    return color?.hex || '#667eea';
-  };
+  // const getColorHex = (colorName: string) => {
+  //   const color = COLORS.find(c => c.name.toLowerCase() === colorName.toLowerCase());
+  //   return color?.hex || '#667eea';
+  // };
 
   const getCategoryIcon = (category: string) => {
     const cat = CLOTHING_CATEGORIES.find(c => c.id === category);
@@ -719,7 +713,7 @@ export default function WardrobeAssessment() {
         >
           <View style={styles.header}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.headerBackButton}
               onPress={() => router.back()}
             >
               <Ionicons name="arrow-back" size={24} color="white" />
@@ -1449,7 +1443,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  backButton: {
+  headerBackButton: {
     padding: 8,
   },
   title: {
